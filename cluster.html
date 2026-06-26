@@ -650,8 +650,12 @@ function setSession(token, userId, makerId, admin) {
     localStorage.setItem('cod_makerid', makerId || '');
     localStorage.setItem('cod_admin',   admin ? 'true' : 'false');
     applyAuthUI();
-    renderMain();
-    if (currentMaker) renderCluster();
+    loadArchive().then(() => {
+        if (currentMaker) {
+            const updated = makers.find(m => String(m.id) === String(currentMaker.id));
+            if (updated) openCluster(updated);
+        }
+    });
 }
 
 function signOut() {
