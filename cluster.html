@@ -309,12 +309,39 @@
             <input type="text" id="signup-name" placeholder="Full name">
         </div>
         <div class="auth-field">
+            <label>Initials</label>
+            <input type="text" id="signup-initials" placeholder="KS" maxlength="3" style="text-transform:uppercase;letter-spacing:2px;">
+        </div>
+        <div class="auth-field">
+            <label>City</label>
+            <input type="text" id="signup-city" placeholder="New York">
+        </div>
+        <div class="auth-field">
+            <label>Role</label>
+            <select id="signup-role">
+                <option value="maker">Maker / Artist</option>
+                <option value="filmmaker">Filmmaker</option>
+                <option value="musician">Musician</option>
+                <option value="writer">Writer</option>
+                <option value="curator">Curator</option>
+                <option value="nonprofit">Institution — Non-profit</option>
+                <option value="institution">Institution — For-profit</option>
+            </select>
+        </div>
+        <div class="auth-field">
             <label>Email</label>
             <input type="email" id="signup-email" placeholder="your@email.com" autocomplete="email">
         </div>
         <div class="auth-field">
             <label>Password</label>
             <input type="password" id="signup-password" placeholder="Choose a password" autocomplete="new-password">
+        </div>
+        <div class="auth-field">
+            <label>Access code (optional)</label>
+            <div style="display:flex;gap:8px;">
+                <input type="text" id="signup-code" placeholder="e.g. WAVE24" style="flex:1;">
+                <button type="button" class="btn" onclick="generateCode('signup-code')" style="white-space:nowrap;">GENERATE</button>
+            </div>
         </div>
         <button class="btn" style="width:100%;padding:10px;margin-top:8px;font-size:10px;" onclick="doSignUp()">CREATE ACCOUNT</button>
         <div class="auth-switch" onclick="switchToSignIn()">Already have an account? Sign in →</div>
@@ -589,20 +616,24 @@ async function doSignIn() {
 async function doSignUp() {
     const inviteCode = document.getElementById('signup-invite').value.trim().toUpperCase();
     const name       = document.getElementById('signup-name').value.trim();
+    const initials   = document.getElementById('signup-initials').value.trim().toUpperCase() || getInitials(name);
+    const city       = document.getElementById('signup-city').value.trim();
+    const role       = document.getElementById('signup-role').value;
+    const accessCode = document.getElementById('signup-code').value.trim();
     const email      = document.getElementById('signup-email').value.trim();
     const password   = document.getElementById('signup-password').value;
     const errEl      = document.getElementById('signup-error');
     errEl.style.display = 'none';
-    if (!inviteCode || !name || !email || !password) { errEl.textContent = 'ALL FIELDS REQUIRED'; errEl.style.display = 'block'; return; }
+    if (!inviteCode || !name || !city || !role || !email || !password) { errEl.textContent = 'ALL FIELDS REQUIRED'; errEl.style.display = 'block'; return; }
     if (password.length < 8) { errEl.textContent = 'PASSWORD MIN 8 CHARACTERS'; errEl.style.display = 'block'; return; }
     try {
         const res  = await fetch(WORKER_URL + '/api/auth/register', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ inviteCode, name, email, password })
+            body: JSON.stringify({ inviteCode, name, initials, city, role, accessCode, email, password })
         });
         const data = await res.json();
         if (!res.ok) { errEl.textContent = data.error.toUpperCase(); errEl.style.display = 'block'; return; }
-        setSession(data.token, data.userId, null, false);
+        setSession(data.token, data.userId, data.makerId || null, false);
         closeSignUp();
         log('ACCOUNT CREATED — WELCOME');
     } catch(e) { errEl.textContent = 'CONNECTION ERROR'; errEl.style.display = 'block'; }
