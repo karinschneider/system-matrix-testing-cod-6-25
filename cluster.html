@@ -841,9 +841,16 @@ function renderMain() {
     Object.values(cdTimers).forEach(t => clearInterval(t));
     cdTimers = {};
     canvas.innerHTML = '';
-    document.getElementById('live-count').textContent = makers.length + ' LIVE';
+    document.getElementById('live-count').textContent = clusters.length + ' LIVE';
 
     makers.forEach((maker, i) => {
+        // CANVAS VISIBILITY: show a profile only if it has a live cluster,
+        // or it's the signed-in user's own profile (glowing). Otherwise skip —
+        // it still appears on the globe as a dot. Self-cleans dormant profiles.
+        const makerCluster = clusters.find(c => c.makerId === maker.id);
+        const isMine = authMakerId && String(authMakerId) === String(maker.id);
+        if (!makerCluster && !isMine) return;
+
         const { w: W, h: H } = identitySize(maker.role);
         if (!makerPos[maker.id]) {
             const mxX = Math.max(60, window.innerWidth  - W - 100);
@@ -873,7 +880,6 @@ function renderMain() {
         nameEl.textContent = maker.name || '';
         wrap.appendChild(nameEl);
 
-        const makerCluster = clusters.find(c => c.makerId === maker.id);
         if (makerCluster) {
             const cdEl = document.createElement('div');
             cdEl.className = 'identity-cd';
