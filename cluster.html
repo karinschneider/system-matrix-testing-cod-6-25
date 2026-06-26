@@ -849,7 +849,9 @@ function renderMain() {
         // it still appears on the globe as a dot. Self-cleans dormant profiles.
         const makerCluster = clusters.find(c => c.makerId === maker.id);
         const isMine = authMakerId && String(authMakerId) === String(maker.id);
-        if (!makerCluster && !isMine) return;
+        // Admin sees ALL profiles (to create/manage them); visitors & artists see
+        // only live clusters or their own profile
+        if (!makerCluster && !isMine && !isAdmin) return;
 
         const { w: W, h: H } = identitySize(maker.role);
         if (!makerPos[maker.id]) {
