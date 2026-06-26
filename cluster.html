@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>COMMONS ON DEMAND | 24H</title>
+    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+    <style>
+        :root { 
+            --bg: #000000; 
+            --text: #ffffff; 
+            --accent: #cccccc;
+            --border: #333333;
+            --pink: #c45c7a;
+            --yellow: #d4c84a;
+            --blue: #4a7fa5;
+            --red: #e8453c;
+            --orange: #e07b3a;
+            --green: #7FFF00;
+            --white-inst: #ffffff;
+            --grey: #888888;
+            --view-bg: #000000;
+            --radius-paid: 12px;
+        }
+        body.light-mode { 
+            --bg: #ffffff; 
+            --text: #000000; 
+            --accent: #333333;
+            --border: #dddddd;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; 
+            -webkit-font-smoothing: antialiased;
+            background-color: var(--bg); 
+            color: var(--text); 
+            overflow: hidden;
+            width: 100vw; height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        #header {
+            position: fixed; top: 0; left: 0; right: 0;
+            padding: 16px 20px;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 100; pointer-events: none;
+        }
+        #header > * { pointer-events: auto; }
+        .title { 
+            font-size: 11px; font-weight: bold; letter-spacing: 3px; 
+            text-transform: uppercase; cursor: pointer; user-select: none;
+            color: var(--text);
+        }
+        .btn { 
+            background: none; border: 1px solid var(--text); color: var(--text);
+            padding: 4px 10px; font-size: 9px; cursor: pointer; text-transform: uppercase;
+            transition: 0.2s; letter-spacing: 1px; font-weight: bold;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn:hover { background: var(--text); color: var(--bg); }
+        .btn.active { background: var(--text); color: var(--bg); }
+
+        /* ── IGNITION MARK (◉) — pulsing, links back to the globe ── */
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0.4; text-shadow: 0 0 0 rgba(196,92,122,0); }
+            50%      { opacity: 1;   text-shadow: 0 0 9px rgba(196,92,122,0.85); }
+        }
+        .ignition {
+            font-size: 14px; line-height: 1; color: var(--pink);
+            text-decoration: none; cursor: pointer; user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            animation: pulse-glow 2.4s ease-in-out infinite;
+        }
+        .ignition:hover { opacity: 1; }
+        #canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; overflow: hidden; }
+
+        /* IDENTITY SHAPES */
+        .identity-wrap { position: absolute; cursor: pointer; user-select: none; }
+        .identity-inner { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; transition: opacity 0.2s; }
+        .identity-inner:hover { opacity: 0.65; }
+        .identity-circle        { border-radius: 50%; border: 1px solid var(--pink); }
+        .identity-circle-blue   { border-radius: 50%; border: 1px solid var(--blue); }
+        .identity-circle-red    { border-radius: 50%; border: 1px solid var(--red); }
+        .identity-circle-orange { border-radius: 50%; border: 1px solid var(--orange); }
+        .identity-oval          { border-radius: 50%; border: 1px solid var(--yellow); }
+        .identity-square-green  { border: 1px solid var(--green); }
+        .identity-square-white  { border: 1px solid var(--white-inst); }
+        .identity-initials { font-size: 10px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; color: var(--text); opacity: 0.85; pointer-events: none; }
+        .identity-name { position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%); font-size: 8px; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); opacity: 0.45; white-space: nowrap; pointer-events: none; }
+        .identity-cd { position: absolute; top: -16px; left: 50%; transform: translateX(-50%); font-size: 7px; font-family: monospace; letter-spacing: 1px; color: var(--accent); opacity: 0.45; white-space: nowrap; pointer-events: none; }
+        .identity-cd.urgent { color: #ff4444; opacity: 1; }
+
+        /* WORK SHAPES */
+        .shape-wrap { position: absolute; cursor: pointer; transition: opacity 0.3s; }
+        .shape-wrap:hover { opacity: 0.75; }
+        .shape-wrap.expired { opacity: 0.2; pointer-events: none; }
+        .shape-video       { border: 1px solid var(--pink); background: transparent; }
+        .shape-performance { border: 1px solid var(--pink); border-radius: 50%; background: transparent; }
+        .shape-sound       { border: 1px solid var(--grey); background: transparent; }
+        .shape-www         { border: 1px solid var(--pink); background: transparent; }
+        .shape-image       { border: 1px solid var(--grey); background: transparent; }
+        .shape-text        { border: 1px solid var(--grey); background: transparent; }
+        .shape-slides      { border: 1px solid var(--pink); background: transparent; }
+        .shape-pay-video   { border: 1px solid var(--pink); border-radius: var(--radius-paid); background: transparent; }
+        .shape-pay-sound   { border: 1px solid var(--grey); border-radius: var(--radius-paid); background: transparent; }
+        .shape-pay-www     { border: 1px solid var(--pink); border-radius: var(--radius-paid); background: transparent; }
+        .shape-pay-image   { border: 1px solid var(--grey); border-radius: var(--radius-paid); background: transparent; }
+        .shape-pay-text    { border: 1px solid var(--grey); border-radius: var(--radius-paid); background: transparent; }
+        .shape-pay-slides  { border: 1px solid var(--pink); border-radius: var(--radius-paid); background: transparent; }
+        .shape-slides-inner { position: absolute; top: 10px; left: 10px; right: 10px; bottom: 10px; border: 1px solid rgba(255,255,255,0.12); pointer-events: none; }
+        .shape-text-title { position: absolute; top: 0; left: 0; right: 0; padding: 10px 12px 8px; border-bottom: 1px solid rgba(136,136,136,0.3); }
+        .shape-text-title-main { font-size: 9px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; color: var(--text); opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .shape-text-title-sub { font-size: 7px; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); opacity: 0.5; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .shape-text-preview { position: absolute; top: 52px; left: 12px; right: 12px; bottom: 30px; font-size: 8px; line-height: 1.6; color: var(--text); opacity: 0.2; overflow: hidden; word-break: break-word; }
+        .shape-title { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--text); opacity: 0.55; pointer-events: none; text-align: center; width: calc(100% - 20px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .shape-label { position: absolute; bottom: 10px; left: 12px; font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--text); opacity: 0.4; pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100% - 80px); }
+        .shape-countdown { position: absolute; top: 10px; right: 10px; font-size: 8px; letter-spacing: 1px; color: var(--accent); opacity: 0.6; font-family: monospace; pointer-events: none; }
+        .shape-countdown.urgent { color: #ff4444; opacity: 1; }
+        .shape-paid-badge { position: absolute; top: 10px; left: 10px; font-size: 7px; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); opacity: 0.5; pointer-events: none; }
+        .shape-actions { position: absolute; top: 8px; left: 8px; display: none; gap: 6px; }
+        body.admin-active .shape-actions { display: flex; }
+        .shape-action-btn { font-size: 13px; cursor: pointer; opacity: 0.4; color: var(--text); transition: 0.2s; background: none; border: none; padding: 0; }
+        .shape-action-btn:hover { opacity: 1; }
+        .shape-del-btn:hover { color: #ff0000; }
+
+        /* CLUSTER VIEW */
+        #cluster-view { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg); z-index: 200; display: none; overflow: hidden; }
+        #cluster-header { position: fixed; top: 0; left: 0; right: 0; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 300; pointer-events: none; }
+        #cluster-header > * { pointer-events: auto; }
+        #cluster-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; overflow: hidden; }
+        .cluster-name { font-size: 11px; font-weight: bold; letter-spacing: 3px; text-transform: uppercase; color: var(--text); }
+        .cluster-sub  { font-size: 8px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); opacity: 0.4; margin-top: 3px; }
+        .cluster-title-display { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); opacity: 0.6; margin-top: 2px; }
+
+        /* OVERLAYS */
+        .overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.92); z-index: 5000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(8px); }
+        body.light-mode .overlay { background: rgba(255,255,255,0.92); }
+
+        /* BOTTOM BAR */
+        #bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 100; font-family: monospace; font-size: 9px; color: var(--accent); pointer-events: none; }
+        #bottom-bar > * { pointer-events: auto; }
+        #console-display { opacity: 0.5; }
+        .db-controls { display: flex; gap: 20px; }
+        .db-controls span { cursor: pointer; opacity: 0.4; transition: 0.2s; }
+        .db-controls span:hover { opacity: 1; }
+
+        /* LEGEND */
+        #legend { position: fixed; bottom: 36px; right: 20px; display: flex; flex-direction: column; gap: 6px; z-index: 100; pointer-events: none; }
+        .legend-item { display: flex; align-items: center; gap: 8px; font-size: 8px; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); opacity: 0.3; }
+        .leg-circle        { width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--pink); flex-shrink: 0; }
+        .leg-circle-blue   { width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--blue); flex-shrink: 0; }
+        .leg-circle-red    { width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--red); flex-shrink: 0; }
+        .leg-circle-orange { width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--orange); flex-shrink: 0; }
+        .leg-oval          { width: 18px; height: 11px; border-radius: 50%; border: 1px solid var(--yellow); flex-shrink: 0; }
+        .leg-square-green  { width: 11px; height: 11px; border: 1px solid var(--green); flex-shrink: 0; }
+        .leg-square-white  { width: 11px; height: 11px; border: 1px solid var(--white-inst); flex-shrink: 0; }
+
+        /* FORMS */
+        #reg-section { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.92); z-index: 5000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(8px); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+        body.light-mode #reg-section { background: rgba(255,255,255,0.92); }
+        .form-container { width: 92%; max-width: 580px; padding: 24px; border: 1px solid var(--text); background: var(--bg); position: relative; max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; margin: auto; }
+        .grid-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        label { font-size: 9px; text-transform: uppercase; color: var(--accent); margin-bottom: 3px; display: block; letter-spacing: 1px; font-weight: bold; }
+        input, select, textarea { background: none; border: 1px solid var(--border); padding: 7px 8px; color: var(--text); font-size: 11px; width: 100%; font-family: inherit; border-radius: 0; outline: none; -webkit-appearance: none; }
+        input:focus, select:focus, textarea:focus { border-color: var(--text); }
+        textarea { grid-column: span 2; height: 120px; resize: vertical; }
+        .form-close { position: absolute; top: 12px; right: 16px; cursor: pointer; font-size: 22px; color: var(--text); opacity: 0.4; transition: 0.2s; -webkit-tap-highlight-color: transparent; }
+        .form-close:hover { opacity: 1; }
+        #form-preview-container { grid-column: span 2; height: 110px; background: #111; border: 1px solid var(--border); display: flex; justify-content: center; align-items: center; margin-bottom: 4px; overflow: hidden; }
+        body.light-mode #form-preview-container { background: #eee; }
+        #form-preview-container img, #form-preview-container video { max-height: 100%; max-width: 100%; object-fit: contain; }
+
+        /* AUTH FORM */
+        .auth-container { width: 92%; max-width: 400px; padding: 32px; border: 1px solid var(--text); background: var(--bg); position: relative; margin: auto; }
+        .auth-title { font-size: 10px; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 24px; }
+        .auth-field { margin-bottom: 14px; }
+        .auth-switch { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); opacity: 0.5; cursor: pointer; text-align: center; margin-top: 16px; }
+        .auth-switch:hover { opacity: 1; }
+        .auth-error { font-size: 9px; color: #ff4444; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px; display: none; }
+        .auth-user { font-size: 9px; letter-spacing: 1px; font-family: monospace; opacity: 0.5; }
+
+        /* VIEWING ROOM */
+        #viewing-room { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--view-bg); z-index: 6000; display: none; justify-content: center; align-items: center; }
+        #media-container { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; padding: 60px 20px; }
+        .video-js { width: 100% !important; height: 100% !important; }
+        .view-controls { position: absolute; top: 16px; right: 16px; z-index: 7000; display: flex; gap: 8px; align-items: center; }
+        .bg-toggle { width: 16px; height: 16px; border: 1px solid rgba(128,128,128,0.4); cursor: pointer; transition: 0.2s; flex-shrink: 0; }
+        .bg-toggle.black { background: #000; }
+        .bg-toggle.white { background: #fff; }
+        .bg-toggle.grey  { background: #888; }
+        .bg-toggle:hover { transform: scale(1.2); }
+        .close-btn { background: var(--text); color: var(--bg); border: none; padding: 8px 16px; font-size: 10px; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; margin-left: 8px; -webkit-tap-highlight-color: transparent; }
+
+        /* TEXT OVERLAY */
+        #text-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.96); z-index: 6000; display: none; overflow-y: auto; -webkit-overflow-scrolling: touch; backdrop-filter: blur(8px); }
+        .text-overlay-inner { width: 92%; max-width: 640px; margin: 0 auto; padding: 80px 0 80px; position: relative; }
+        #text-close { position: fixed; top: 20px; right: 20px; cursor: pointer; font-size: 22px; color: var(--text); opacity: 0.4; -webkit-tap-highlight-color: transparent; z-index: 6001; }
+        #text-close:hover { opacity: 1; }
+        #text-title { font-size: 10px; letter-spacing: 3px; text-transform: uppercase; color: var(--accent); opacity: 0.5; margin-bottom: 8px; }
+        #text-author { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); opacity: 0.4; margin-bottom: 40px; }
+        #text-body { font-size: 15px; line-height: 1.9; color: var(--text); white-space: pre-wrap; }
+
+        /* INVITE OVERLAY */
+        #invite-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.92); z-index: 5500; display: none; justify-content: center; align-items: center; backdrop-filter: blur(8px); padding: 20px; }
+        .invite-box { width: 100%; max-width: 500px; border: 1px solid var(--text); background: var(--bg); padding: 24px; position: relative; }
+        .invite-box h3 { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 16px; }
+        .invite-msg { font-family: monospace; font-size: 11px; line-height: 1.7; border: 1px solid var(--border); padding: 12px; color: var(--accent); margin-bottom: 14px; white-space: pre-wrap; word-break: break-all; max-height: 200px; overflow-y: auto; }
+        .invite-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+        .admin-only { display: none; }
+        body.admin-active .admin-only { display: inline-block; }
+        .artist-only { display: none; }
+        body.artist-active .artist-only { display: inline-block; }
+
+        @media (max-width: 600px) {
+            .grid-form { grid-template-columns: 1fr; }
+            textarea { grid-column: span 1; }
+            #form-preview-container { grid-column: span 1; }
+            .form-container { padding: 20px 16px; max-height: 95vh; }
+            #text-body { font-size: 14px; }
+            .text-overlay-inner { padding: 70px 0 60px; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="header">
+    <div class="title" onclick="openSignIn()">COMMONS ON DEMAND</div>
+    <div style="display:flex; gap:8px; align-items:center;">
+        <span id="live-count" style="font-size:9px; letter-spacing:1px; opacity:0.4; font-family:monospace;"></span>
+        <span id="user-display" class="auth-user"></span>
+        <button class="btn admin-only" id="profile-btn" onclick="openProfileForm()">+ CREATE PROFILE</button>
+        <button class="btn admin-only" onclick="openInvitePanel()">+ INVITE</button>
+        <button class="btn" id="auth-btn" onclick="openSignIn()">SIGN IN</button>
+        <button class="btn" style="display:none;" id="signout-btn" onclick="signOut()">SIGN OUT</button>
+        <button class="btn" onclick="toggleMode()">◐</button>
+        <a class="ignition" href="index.html" id="ignition-mark" aria-label="The Commons" title="THE COMMONS">◉</a>
+    </div>
+</div>
+
+<div id="canvas"></div>
+
+<div id="legend">
+    <div class="legend-item"><div class="leg-circle"></div> maker</div>
+    <div class="legend-item"><div class="leg-circle-blue"></div> filmmaker</div>
+    <div class="legend-item"><div class="leg-circle-red"></div> musician</div>
+    <div class="legend-item"><div class="leg-circle-orange"></div> writer</div>
+    <div class="legend-item"><div class="leg-oval"></div> curator</div>
+    <div class="legend-item"><div class="leg-square-green"></div> non-profit</div>
+    <div class="legend-item"><div class="leg-square-white"></div> institution</div>
+</div>
+
+<div id="bottom-bar">
+    <div id="console-display">COMMONS_ON_DEMAND // 24H</div>
+    <div class="db-controls">
+        <span class="admin-only" onclick="exportData()">EXPORT</span>
+    </div>
+    <div style="font-size:7px;letter-spacing:2px;color:rgba(255,255,255,0.15);">2026 © commons-on-demand.com</div>
+</div>
+
+<!-- CLUSTER VIEW -->
+<div id="cluster-view">
+    <div id="cluster-header">
+        <div>
+            <div class="cluster-name" id="cluster-name-el">—</div>
+            <div class="cluster-title-display" id="cluster-title-el"></div>
+            <div class="cluster-sub" id="cluster-role-el">MAKER</div>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+            <span id="cluster-cd" style="font-family:monospace;font-size:9px;opacity:0.4;letter-spacing:1px;"></span>
+            <button class="btn" id="start-cluster-btn" onclick="openClusterForm()" style="display:none;">+ START CLUSTER</button>
+            <button class="btn" id="upload-btn" onclick="openUploadForm()" style="display:none;">+ UPLOAD</button>
+            <button class="btn" onclick="closeCluster()">← COMMONS</button>
+        </div>
+    </div>
+    <div id="cluster-canvas"></div>
+</div>
+
+<!-- SIGN IN / CHANGE PASSWORD OVERLAY (merged — single container) -->
+<div id="signin-section" class="overlay" onclick="if(event.target.id==='signin-section')closeSignIn()">
+    <div class="auth-container" onclick="event.stopPropagation()">
+        <div class="form-close" onclick="closeSignIn()">×</div>
+
+        <!-- VIEW: SIGN IN (shown when signed out) -->
+        <div id="signin-form">
+            <div class="auth-title">Sign In</div>
+            <div class="auth-error" id="signin-error"></div>
+            <div class="auth-field">
+                <label>Email</label>
+                <input type="email" id="signin-email" placeholder="your@email.com" autocomplete="email">
+            </div>
+            <div class="auth-field">
+                <label>Password</label>
+                <input type="password" id="signin-password" placeholder="••••••••" autocomplete="current-password">
+            </div>
+            <button class="btn" style="width:100%;padding:10px;margin-top:8px;font-size:10px;" onclick="doSignIn()">SIGN IN</button>
+            <div class="auth-switch" onclick="switchToRegister()">Have an invite code? Create account →</div>
+        </div>
+
+        <!-- VIEW: CHANGE PASSWORD (shown when signed in) -->
+        <div id="signin-change-pw" style="display:none;">
+            <div class="auth-title">Change Password</div>
+            <div class="auth-error" id="change-password-error"></div>
+            <div class="auth-field">
+                <label>Current Password</label>
+                <input type="password" id="cp-current" placeholder="••••••••" autocomplete="current-password">
+            </div>
+            <div class="auth-field">
+                <label>New Password</label>
+                <input type="password" id="cp-new" placeholder="Min 8 characters" autocomplete="new-password">
+            </div>
+            <div class="auth-field">
+                <label>Confirm New Password</label>
+                <input type="password" id="cp-confirm" placeholder="Repeat new password" autocomplete="new-password">
+            </div>
+            <div id="change-password-success" style="font-size:9px;color:#7FFF00;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;display:none;">PASSWORD UPDATED — SIGN IN AGAIN</div>
+            <button class="btn" style="width:100%;padding:10px;font-size:10px;" onclick="doChangePassword()">UPDATE PASSWORD</button>
+        </div>
+
+    </div>
+</div>
+
+<!-- SIGN UP OVERLAY -->
+<div id="signup-section" class="overlay" onclick="if(event.target.id==='signup-section')closeSignUp()">
+    <div class="auth-container" onclick="event.stopPropagation()">
+        <div class="form-close" onclick="closeSignUp()">×</div>
+        <div class="auth-title">Create Account</div>
+        <div class="auth-error" id="signup-error"></div>
+        <div class="auth-field">
+            <label>Invite Code</label>
+            <input type="text" id="signup-invite" placeholder="XXXXXXXXXXXX" style="text-transform:uppercase;letter-spacing:2px;">
+        </div>
+        <div class="auth-field">
+            <label>Your Name</label>
+            <input type="text" id="signup-name" placeholder="Full name">
+        </div>
+        <div class="auth-field">
+            <label>Email</label>
+            <input type="email" id="signup-email" placeholder="your@email.com" autocomplete="email">
+        </div>
+        <div class="auth-field">
+            <label>Password</label>
+            <input type="password" id="signup-password" placeholder="Choose a password" autocomplete="new-password">
+        </div>
+        <button class="btn" style="width:100%;padding:10px;margin-top:8px;font-size:10px;" onclick="doSignUp()">CREATE ACCOUNT</button>
+        <div class="auth-switch" onclick="switchToSignIn()">Already have an account? Sign in →</div>
+    </div>
+</div>
+
+<!-- INVITE PANEL (admin only) -->
+<div id="invite-section" class="overlay" onclick="if(event.target.id==='invite-section')closeInvitePanel()">
+    <div class="auth-container" onclick="event.stopPropagation()">
+        <div class="form-close" onclick="closeInvitePanel()">×</div>
+        <div class="auth-title">Generate Invite Code</div>
+        <p style="font-size:9px;opacity:0.5;letter-spacing:1px;text-transform:uppercase;margin-bottom:20px;">Each code can only be used once. Share it directly with the artist.</p>
+        <button class="btn" style="width:100%;padding:10px;font-size:10px;" onclick="generateInvite()">GENERATE CODE</button>
+        <div id="invite-result" style="margin-top:16px;font-family:monospace;font-size:14px;letter-spacing:4px;text-align:center;display:none;"></div>
+        <button class="btn" id="copy-invite-btn" style="width:100%;padding:8px;margin-top:10px;font-size:9px;display:none;" onclick="copyInviteCode()">COPY CODE</button>
+    </div>
+</div>
+
+
+<!-- PROFILE OVERLAY -->
+<div id="profile-section" class="overlay" onclick="if(event.target.id==='profile-section')closeProfileForm()">
+    <div class="form-container" onclick="event.stopPropagation()">
+        <div class="form-close" onclick="closeProfileForm()">×</div>
+        <h2 id="profile-title" style="font-size:10px;text-transform:uppercase;margin-bottom:16px;letter-spacing:2px;">Create Profile</h2>
+        <form id="profileForm" class="grid-form">
+            <input type="hidden" id="profile-id">
+            <div style="grid-column:span 2;">
+                <label>Name</label>
+                <input type="text" id="p-name" placeholder="Your name" required>
+            </div>
+            <div>
+                <label>Initials</label>
+                <input type="text" id="p-initials" placeholder="KS" maxlength="3">
+            </div>
+            <div>
+                <label>City</label>
+                <input type="text" id="p-city" placeholder="New York">
+            </div>
+            <div>
+                <label>Role</label>
+                <select id="p-role">
+                    <option value="maker">Maker / Artist</option>
+                    <option value="filmmaker">Filmmaker</option>
+                    <option value="musician">Musician</option>
+                    <option value="writer">Writer</option>
+                    <option value="curator">Curator</option>
+                    <option value="nonprofit">Institution — Non-profit</option>
+                    <option value="institution">Institution — For-profit</option>
+                </select>
+            </div>
+            <div>
+                <label>Access code (optional)</label>
+                <div style="display:flex;gap:8px;">
+                    <input type="text" id="p-code" placeholder="e.g. WAVE24" style="flex:1;">
+                    <button type="button" class="btn" onclick="generateCode('p-code')" style="white-space:nowrap;">GENERATE</button>
+                </div>
+            </div>
+            <button type="submit" id="profile-submit" class="btn" style="grid-column:span 2;margin-top:8px;padding:10px;font-size:10px;">CREATE PROFILE</button>
+            <button type="button" class="btn" onclick="closeProfileForm()" style="grid-column:span 2;border:none;opacity:0.3;font-size:10px;">CANCEL</button>
+        </form>
+    </div>
+</div>
+
+<!-- START CLUSTER OVERLAY -->
+<div id="cluster-form-section" class="overlay" onclick="if(event.target.id==='cluster-form-section')closeClusterForm()">
+    <div class="form-container" style="max-width:420px;" onclick="event.stopPropagation()">
+        <div class="form-close" onclick="closeClusterForm()">×</div>
+        <h2 style="font-size:10px;text-transform:uppercase;margin-bottom:16px;letter-spacing:2px;">Start Cluster — 24H Clock Starts</h2>
+        <form id="clusterForm" class="grid-form">
+            <input type="hidden" id="cluster-edit-id">
+            <div style="grid-column:span 2;">
+                <label>Cluster Title</label>
+                <input type="text" id="cl-title" placeholder="e.g. Delay and Presence" required>
+            </div>
+            <button type="submit" id="cluster-submit" class="btn" style="grid-column:span 2;margin-top:8px;padding:10px;font-size:10px;">START CLUSTER — 24H CLOCK STARTS NOW</button>
+            <button type="button" class="btn" onclick="closeClusterForm()" style="grid-column:span 2;border:none;opacity:0.3;font-size:10px;">CANCEL</button>
+        </form>
+    </div>
+</div>
+
+<!-- WORK UPLOAD OVERLAY -->
+<div id="reg-section" onclick="handleBgClick(event)">
+    <div class="form-container" onclick="event.stopPropagation()">
+        <div class="form-close" onclick="closeUploadForm()">×</div>
+        <h2 id="form-title" style="font-size:10px; text-transform:uppercase; margin-bottom:16px; letter-spacing:2px;">Upload Work</h2>
+        <div id="form-preview-container">
+            <span style="font-size:9px; opacity:0.3; font-family:monospace;">PREVIEW</span>
+        </div>
+        <form id="archiveForm" class="grid-form">
+            <input type="hidden" id="editing-id">
+            <input type="hidden" id="upload-time">
+            <div>
+                <label>Year</label>
+                <input type="text" id="year" placeholder="2026" required>
+            </div>
+            <div>
+                <label>Mode</label>
+                <select id="mode" onchange="handleModeChange(this.value)">
+                    <optgroup label="Free">
+                        <option value="VIDEO">VIDEO</option>
+                        <option value="PERFORMANCE">PERFORMANCE — LIVE</option>
+                        <option value="SOUND">SOUND</option>
+                        <option value="WWW">WWW</option>
+                        <option value="SLIDES">SLIDES</option>
+                        <option value="IMAGE">IMAGE</option>
+                        <option value="TEXT">TEXT</option>
+                    </optgroup>
+                    <optgroup label="Paid">
+                        <option value="PAY_VIDEO">PAY — VIDEO</option>
+                        <option value="PAY_SOUND">PAY — SOUND</option>
+                        <option value="PAY_WWW">PAY — WWW</option>
+                        <option value="PAY_SLIDES">PAY — SLIDES</option>
+                        <option value="PAY_IMAGE">PAY — IMAGE</option>
+                        <option value="PAY_TEXT">PAY — TEXT</option>
+                    </optgroup>
+                </select>
+            </div>
+            <div style="grid-column:span 2;">
+                <label>Title</label>
+                <input type="text" id="title" placeholder="Title of work" required>
+            </div>
+            <div style="grid-column:span 2;">
+                <label>Artist</label>
+                <input type="text" id="artist" placeholder="Your name">
+            </div>
+            <div style="grid-column:span 2;" id="text-content-field">
+                <label id="materials-label">Notes / description (optional)</label>
+                <textarea id="materials" placeholder="Notes / description (optional)"></textarea>
+            </div>
+            <div style="grid-column:span 2;" id="file-link-field">
+                <label>File link (optional — only if not uploading a file below)</label>
+                <input type="text" id="manualPath" placeholder="media/video.mp4 or https://...">
+            </div>
+            <div style="grid-column:span 2;" id="url-link-field">
+                <label id="url-link-label">URL Link</label>
+                <input type="text" id="linkUrl" placeholder="https://yourproject.com">
+            </div>
+            <div style="grid-column:span 2;" id="access-code-field">
+                <label id="access-code-label">Viewer access code (optional)</label>
+                <div style="display:flex; gap:8px;">
+                    <input type="text" id="accessCode" placeholder="e.g. WAVE24" style="flex:1;">
+                    <button type="button" class="btn" onclick="generateCode('accessCode')" style="white-space:nowrap;">GENERATE</button>
+                </div>
+            </div>
+            <div style="grid-column:span 2;" id="file-upload-field">
+                <label>Upload file (auto-fills path)</label>
+                <input type="file" id="mediaFile" style="border:none; padding:0; font-size:10px;" onchange="handleFileSelection(this)">
+            </div>
+            <button type="submit" id="submit-btn" class="btn" style="grid-column:span 2; margin-top:8px; padding:10px; font-size:10px;">COMMIT</button>
+            <button type="button" class="btn" onclick="closeUploadForm()" style="grid-column:span 2; border:none; opacity:0.3; font-size:10px;">CANCEL</button>
+        </form>
+    </div>
+</div>
+
+<!-- VIEWING ROOM -->
+<div id="viewing-room">
+    <div class="view-controls">
+        <div class="bg-toggle black" onclick="setViewBg('#000000')"></div>
+        <div class="bg-toggle white" onclick="setViewBg('#ffffff')"></div>
+        <div class="bg-toggle grey"  onclick="setViewBg('#888888')"></div>
+        <button class="close-btn" onclick="closeRoom()">CLOSE</button>
+    </div>
+    <div id="media-container"></div>
+</div>
+
+<!-- TEXT OVERLAY -->
+<div id="text-overlay">
+    <div id="text-close" onclick="closeText()">×</div>
+    <div class="text-overlay-inner">
+        <div id="text-title"></div>
+        <div id="text-author"></div>
+        <div id="text-body"></div>
+    </div>
+</div>
+
+<!-- INVITE OVERLAY -->
+<div id="invite-overlay" onclick="closeInvite(event)">
+    <div class="invite-box" onclick="event.stopPropagation()">
+        <div class="form-close" onclick="document.getElementById('invite-overlay').style.display='none'">×</div>
+        <h3>Invite to Watch</h3>
+        <div class="invite-msg" id="invite-text"></div>
+        <div class="invite-actions">
+            <button class="btn" onclick="copyInvite()">COPY</button>
+            <button class="btn" onclick="emailInvite()">SEND BY EMAIL</button>
+            <button class="btn" onclick="document.getElementById('invite-overlay').style.display='none'">CLOSE</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+<script>
+const WORKER_URL   = 'https://commons-on-demand-api.pb6w4bwg2n.workers.dev';
+const DATAROOM_URL = window.location.href.split('?')[0];
+
+// Auth state
+let authToken  = localStorage.getItem('cod_token')  || null;
+let authUserId = localStorage.getItem('cod_userid') || null;
+let authMakerId= localStorage.getItem('cod_makerid')|| null;
+let isAdmin    = localStorage.getItem('cod_admin')  === 'true';
+let isArtist   = !!authToken && !isAdmin;
+
+let makers       = [];
+let clusters     = [];
+let archive      = [];
+let makerPos     = {};
+let workPos      = {};
+let cdTimers     = {};
+let currentMaker   = null;
+let currentCluster = null;
+let activeWork   = null;
+let vjsPlayer    = null;
+let lastInviteCode = '';
+
+const PAY_MODES = ['PAY_VIDEO','PAY_SOUND','PAY_WWW','PAY_SLIDES','PAY_IMAGE','PAY_TEXT'];
+
+/* ── AUTH UI ── */
+function openSignIn() {
+    // Single entry point: signed in -> change-password view; signed out -> sign-in view
+    document.getElementById('signin-section').style.display = 'flex';
+    if (authToken) { showChangePassword(); } else { showSignIn(); }
+}
+function showSignIn() {
+    document.getElementById('signin-form').style.display = 'block';
+    document.getElementById('signin-change-pw').style.display = 'none';
+    document.getElementById('signin-error').style.display = 'none';
+    setTimeout(() => { const el = document.getElementById('signin-email'); if (el) el.focus(); }, 100);
+}
+function showChangePassword() {
+    document.getElementById('signin-form').style.display = 'none';
+    document.getElementById('signin-change-pw').style.display = 'block';
+    document.getElementById('change-password-error').style.display = 'none';
+    document.getElementById('change-password-success').style.display = 'none';
+    document.getElementById('cp-current').value = '';
+    document.getElementById('cp-new').value = '';
+    document.getElementById('cp-confirm').value = '';
+}
+function closeSignIn() { document.getElementById('signin-section').style.display = 'none'; }
+function openSignUp()  { document.getElementById('signup-section').style.display = 'flex'; document.getElementById('signup-error').style.display = 'none'; }
+function closeSignUp() { document.getElementById('signup-section').style.display = 'none'; }
+function switchToRegister() { closeSignIn(); openSignUp(); }
+function switchToSignIn()   { closeSignUp(); openSignIn(); }
+
+function openInvitePanel()  { document.getElementById('invite-section').style.display = 'flex'; document.getElementById('invite-result').style.display = 'none'; document.getElementById('copy-invite-btn').style.display = 'none'; }
+function closeInvitePanel() { document.getElementById('invite-section').style.display = 'none'; }
+
+async function doSignIn() {
+    const email    = document.getElementById('signin-email').value.trim();
+    const password = document.getElementById('signin-password').value;
+    const errEl    = document.getElementById('signin-error');
+    errEl.style.display = 'none';
+    if (!email || !password) { errEl.textContent = 'ENTER EMAIL AND PASSWORD'; errEl.style.display = 'block'; return; }
+    try {
+        const res  = await fetch(WORKER_URL + '/api/auth/login', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (!res.ok) { errEl.textContent = data.error.toUpperCase(); errEl.style.display = 'block'; return; }
+        setSession(data.token, data.userId, data.makerId, data.isAdmin);
+        closeSignIn();
+        log('SIGNED IN');
+    } catch(e) { errEl.textContent = 'CONNECTION ERROR'; errEl.style.display = 'block'; }
+}
+
+async function doSignUp() {
+    const inviteCode = document.getElementById('signup-invite').value.trim().toUpperCase();
+    const name       = document.getElementById('signup-name').value.trim();
+    const email      = document.getElementById('signup-email').value.trim();
+    const password   = document.getElementById('signup-password').value;
+    const errEl      = document.getElementById('signup-error');
+    errEl.style.display = 'none';
+    if (!inviteCode || !name || !email || !password) { errEl.textContent = 'ALL FIELDS REQUIRED'; errEl.style.display = 'block'; return; }
+    if (password.length < 8) { errEl.textContent = 'PASSWORD MIN 8 CHARACTERS'; errEl.style.display = 'block'; return; }
+    try {
+        const res  = await fetch(WORKER_URL + '/api/auth/register', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ inviteCode, name, email, password })
+        });
+        const data = await res.json();
+        if (!res.ok) { errEl.textContent = data.error.toUpperCase(); errEl.style.display = 'block'; return; }
+        setSession(data.token, data.userId, null, false);
+        closeSignUp();
+        log('ACCOUNT CREATED — WELCOME');
+    } catch(e) { errEl.textContent = 'CONNECTION ERROR'; errEl.style.display = 'block'; }
+}
+
+function setSession(token, userId, makerId, admin) {
+    authToken   = token;
+    authUserId  = userId;
+    authMakerId = makerId;
+    isAdmin     = !!admin;
+    isArtist    = !!token && !isAdmin;
+    localStorage.setItem('cod_token',   token);
+    localStorage.setItem('cod_userid',  userId || '');
+    localStorage.setItem('cod_makerid', makerId || '');
+    localStorage.setItem('cod_admin',   admin ? 'true' : 'false');
+    applyAuthUI();
+    renderMain();
+    if (currentMaker) renderCluster();
+}
+
+function signOut() {
+    authToken = authUserId = authMakerId = null;
+    isAdmin = isArtist = false;
+    localStorage.removeItem('cod_token');
+    localStorage.removeItem('cod_userid');
+    localStorage.removeItem('cod_makerid');
+    localStorage.removeItem('cod_admin');
+    applyAuthUI();
+    renderMain();
+    if (currentMaker) renderCluster();
+    log('SIGNED OUT');
+}
+
+function applyAuthUI() {
+    const signedIn = !!authToken;
+    // STEP 1: SIGN IN button permanently hidden — the COMMONS ON DEMAND title is the only entry point
+    document.getElementById('auth-btn').style.display    = 'none';
+    document.getElementById('signout-btn').style.display = signedIn ? 'inline-block' : 'none';
+    // STEP 9: change-pw-btn reference removed — the PASSWORD button no longer exists in the header
+    document.getElementById('user-display').textContent  = signedIn ? (isAdmin ? 'ADMIN' : 'ARTIST') : '';
+
+    if (isAdmin) {
+        document.body.classList.add('admin-active');
+        document.body.classList.remove('artist-active');
+    } else if (isArtist) {
+        document.body.classList.remove('admin-active');
+        document.body.classList.add('artist-active');
+    } else {
+        document.body.classList.remove('admin-active');
+        document.body.classList.remove('artist-active');
+    }
+}
+
+async function generateInvite() {
+    try {
+        const res  = await apiFetch('/api/auth/invite', { method: 'POST' });
+        const data = await res.json();
+        lastInviteCode = data.code;
+        const el = document.getElementById('invite-result');
+        el.textContent = data.code;
+        el.style.display = 'block';
+        document.getElementById('copy-invite-btn').style.display = 'block';
+    } catch(e) { alert('Could not generate invite: ' + e.message); }
+}
+
+
+function openChangePassword() {
+    document.getElementById('signin-section').style.display = 'flex';
+    showChangePassword();
+}
+function closeChangePassword() { closeSignIn(); }
+async function doChangePassword() {
+    const current = document.getElementById('cp-current').value;
+    const newPw   = document.getElementById('cp-new').value;
+    const confirm = document.getElementById('cp-confirm').value;
+    const errEl   = document.getElementById('change-password-error');
+    const okEl    = document.getElementById('change-password-success');
+    errEl.style.display = 'none'; okEl.style.display = 'none';
+    if (!current || !newPw || !confirm) { errEl.textContent = 'ALL FIELDS REQUIRED'; errEl.style.display = 'block'; return; }
+    if (newPw.length < 8) { errEl.textContent = 'NEW PASSWORD MIN 8 CHARACTERS'; errEl.style.display = 'block'; return; }
+    if (newPw !== confirm) { errEl.textContent = 'PASSWORDS DO NOT MATCH'; errEl.style.display = 'block'; return; }
+    try {
+        const res = await apiFetch('/api/auth/change-password', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ currentPassword: current, newPassword: newPw })
+        });
+        const data = await res.json();
+        if (!res.ok) { errEl.textContent = data.error.toUpperCase(); errEl.style.display = 'block'; return; }
+        okEl.style.display = 'block';
+        setTimeout(() => { closeChangePassword(); signOut(); }, 2000);
+    } catch(e) { errEl.textContent = 'CONNECTION ERROR'; errEl.style.display = 'block'; }
+}
+
+function copyInviteCode() {
+    navigator.clipboard.writeText(lastInviteCode).then(() => log('INVITE CODE COPIED'));
+}
+
+/* ── ROLE HELPERS ── */
+function roleClass(role) {
+    if (role === 'filmmaker')   return 'identity-circle-blue';
+    if (role === 'musician')    return 'identity-circle-red';
+    if (role === 'writer')      return 'identity-circle-orange';
+    if (role === 'curator')     return 'identity-oval';
+    if (role === 'nonprofit')   return 'identity-square-green';
+    if (role === 'institution') return 'identity-square-white';
+    return 'identity-circle';
+}
+function roleLabel(role) {
+    if (role === 'filmmaker')   return 'FILMMAKER';
+    if (role === 'musician')    return 'MUSICIAN';
+    if (role === 'writer')      return 'WRITER';
+    if (role === 'curator')     return 'CURATOR';
+    if (role === 'nonprofit')   return 'INSTITUTION · NON-PROFIT';
+    if (role === 'institution') return 'INSTITUTION';
+    return 'MAKER · ARTIST';
+}
+function clusterColor(role) {
+    if (role === 'filmmaker')   return 'var(--blue)';
+    if (role === 'musician')    return 'var(--red)';
+    if (role === 'writer')      return 'var(--orange)';
+    if (role === 'curator')     return 'var(--yellow)';
+    if (role === 'nonprofit')   return 'var(--green)';
+    if (role === 'institution') return 'var(--white-inst)';
+    return 'var(--pink)';
+}
+function identitySize(role) {
+    if (role === 'curator') return { w: 110, h: 66 };
+    if (role === 'nonprofit' || role === 'institution') return { w: 72, h: 72 };
+    return { w: 88, h: 88 };
+}
+
+/* ── CAN EDIT — admin or own maker ── */
+function canEdit(makerId) {
+    return isAdmin || (isArtist && authMakerId === makerId);
+}
+
+/* ── MODE CHANGE ── */
+function handleModeChange(mode) {
+    const isText   = mode === 'TEXT'   || mode === 'PAY_TEXT';
+    const isWWW    = mode === 'WWW'    || mode === 'PAY_WWW';
+    const isSlides = mode === 'SLIDES' || mode === 'PAY_SLIDES';
+    const isPaid   = PAY_MODES.includes(mode);
+    const isPerf   = mode === 'PERFORMANCE';
+    const noFile   = isText || isWWW || isPerf;
+    document.getElementById('materials-label').textContent = isText ? 'Text content' : 'Notes / description (optional)';
+    document.getElementById('materials').placeholder = isText ? 'Write your program note or text here...' : 'Notes / description (optional)';
+    document.getElementById('materials').style.height = isText ? '200px' : '80px';
+    document.getElementById('file-link-field').style.display   = noFile ? 'none' : '';
+    document.getElementById('file-upload-field').style.display = noFile ? 'none' : '';
+    document.getElementById('url-link-field').style.display    = (isWWW || isSlides) ? '' : 'none';
+    document.getElementById('url-link-label').textContent = isSlides ? 'Presentation URL (optional)' : 'URL Link (for WWW entries)';
+    document.getElementById('linkUrl').placeholder = isSlides ? 'https://...' : 'https://yourproject.com';
+    const codeLabel = document.getElementById('access-code-label');
+    if (isPaid) { codeLabel.textContent = 'Access code (required for paid works)'; document.getElementById('accessCode').style.borderColor = 'var(--text)'; }
+    else { codeLabel.textContent = 'Viewer access code (optional)'; document.getElementById('accessCode').style.borderColor = ''; }
+}
+
+/* ── API HELPER ── */
+async function apiFetch(path, options = {}) {
+    const headers = Object.assign({}, options.headers);
+    if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
+    const res = await fetch(WORKER_URL + path, Object.assign({}, options, { headers }));
+    if (res.status === 401) {
+        signOut();
+        alert('Session expired — please sign in again.');
+        throw new Error('unauthorized');
+    }
+    return res;
+}
+
+/* ── LOAD ── */
+async function loadArchive() {
+    try {
+        const res = await fetch(WORKER_URL + '/api/data?nc=' + Date.now());
+        if (!res.ok) throw new Error('server error');
+        const data = await res.json();
+        makers   = data.makers   || [];
+        clusters = data.clusters || [];
+        archive  = data.archive  || [];
+        log('LOADED // ' + archive.length + ' WORKS');
+    } catch (e) {
+        makers = []; clusters = []; archive = [];
+        log('OFFLINE // COULD NOT REACH SERVER');
+    }
+    renderMain();
+    const params = new URLSearchParams(window.location.search);
+    const makerId = params.get('maker');
+    if (makerId) {
+        const maker = makers.find(m => String(m.id) === String(makerId));
+        if (maker) openCluster(maker);
+    }
+}
+
+/* ── MAIN CANVAS ── */
+function renderMain() {
+    const canvas = document.getElementById('canvas');
+    Object.values(cdTimers).forEach(t => clearInterval(t));
+    cdTimers = {};
+    canvas.innerHTML = '';
+    document.getElementById('live-count').textContent = makers.length + ' LIVE';
+
+    makers.forEach((maker, i) => {
+        const { w: W, h: H } = identitySize(maker.role);
+        if (!makerPos[maker.id]) {
+            const mxX = Math.max(60, window.innerWidth  - W - 100);
+            const mxY = Math.max(80, window.innerHeight - H - 100);
+            makerPos[maker.id] = { x: 80 + (i * 157 + Math.floor(i * 0.6 * mxX)) % mxX, y: 80 + (i * 103 + Math.floor(i * 0.5 * mxY)) % mxY };
+        }
+        const pos = makerPos[maker.id];
+        const wrap = document.createElement('div');
+        wrap.className = 'identity-wrap';
+        wrap.style.cssText = `left:${pos.x}px;top:${pos.y}px;width:${W}px;height:${H}px;`;
+        wrap.dataset.id = maker.id;
+
+        const inner = document.createElement('div');
+        inner.className = 'identity-inner ' + roleClass(maker.role);
+        const init = document.createElement('div');
+        init.className = 'identity-initials';
+        init.textContent = maker.initials || getInitials(maker.name);
+        inner.appendChild(init);
+        wrap.appendChild(inner);
+
+        const nameEl = document.createElement('div');
+        nameEl.className = 'identity-name';
+        nameEl.textContent = maker.name || '';
+        wrap.appendChild(nameEl);
+
+        const makerCluster = clusters.find(c => c.makerId === maker.id);
+        if (makerCluster) {
+            const cdEl = document.createElement('div');
+            cdEl.className = 'identity-cd';
+            wrap.appendChild(cdEl);
+            cdTimers[maker.id] = setInterval(() => {
+                const rem = makerCluster.expiresAt - Date.now();
+                if (rem <= 0) { clearInterval(cdTimers[maker.id]); cdEl.textContent = ''; return; }
+                const h=Math.floor(rem/3600000), m=Math.floor((rem%3600000)/60000), s=Math.floor((rem%60000)/1000);
+                cdEl.textContent = pad(h)+':'+pad(m)+':'+pad(s);
+                if (rem < 3600000) cdEl.classList.add('urgent');
+            }, 1000);
+        }
+
+        if (canEdit(maker.id)) {
+            const eb = document.createElement('button');
+            eb.textContent = '✎';
+            eb.style.cssText = 'position:absolute;top:-14px;left:0;background:none;border:none;color:var(--accent);font-size:12px;cursor:pointer;opacity:0;transition:0.15s;';
+            const db = document.createElement('button');
+            db.textContent = '×';
+            db.style.cssText = 'position:absolute;top:-14px;right:0;background:none;border:none;color:#ff4444;font-size:14px;cursor:pointer;opacity:0;transition:0.15s;';
+            wrap.addEventListener('mouseenter', ()=>{ eb.style.opacity='0.8'; db.style.opacity='0.8'; });
+            wrap.addEventListener('mouseleave', ()=>{ eb.style.opacity='0'; db.style.opacity='0'; });
+            eb.onclick = (e)=>{ e.stopPropagation(); openEditProfile(maker.id); };
+            if (isAdmin) db.onclick = (e)=>{ e.stopPropagation(); deleteMaker(maker.id); };
+            else db.style.display = 'none';
+            wrap.appendChild(eb); wrap.appendChild(db);
+        }
+
+        wrap.onclick = () => {
+            if (wrap._dragged) { wrap._dragged=false; return; }
+            if (!authToken && maker.accessCode && maker.accessCode !== '') {
+                const pass = prompt('Enter access code:');
+                if (!pass || pass.trim() !== maker.accessCode.trim()) { alert('INVALID CODE'); return; }
+            }
+            openCluster(maker);
+        };
+
+        makeDraggableIdentity(wrap, maker.id);
+        canvas.appendChild(wrap);
+    });
+
+    log('COMMONS_ON_DEMAND // ' + makers.length + ' LIVE');
+}
+
+/* ── CLUSTER ── */
+function openCluster(maker) {
+    currentMaker = maker;
+    currentCluster = clusters.find(c => c.makerId === maker.id) || null;
+    document.getElementById('cluster-view').style.display = 'block';
+    document.getElementById('cluster-name-el').textContent = maker.name || '—';
+    document.getElementById('cluster-title-el').textContent = currentCluster ? currentCluster.title.toUpperCase() : '';
+    document.getElementById('cluster-role-el').textContent = roleLabel(maker.role);
+
+    const startBtn  = document.getElementById('start-cluster-btn');
+    const uploadBtn = document.getElementById('upload-btn');
+    const canEditThis = canEdit(maker.id);
+    startBtn.style.display  = canEditThis ? 'inline-block' : 'none';
+    uploadBtn.style.display = (canEditThis && currentCluster) ? 'inline-block' : 'none';
+
+    const cdEl = document.getElementById('cluster-cd');
+    if (cdTimers['_cluster']) clearInterval(cdTimers['_cluster']);
+    if (currentCluster) {
+        cdTimers['_cluster'] = setInterval(()=>{
+            const rem = currentCluster.expiresAt - Date.now();
+            if (rem<=0){cdEl.textContent='EXPIRED';return;}
+            const h=Math.floor(rem/3600000),m=Math.floor((rem%3600000)/60000),s=Math.floor((rem%60000)/1000);
+            cdEl.textContent=pad(h)+':'+pad(m)+':'+pad(s);
+            if(rem<3600000) cdEl.style.color='#ff4444';
+        },1000);
+    } else { cdEl.textContent = ''; }
+    renderCluster();
+}
+
+function closeCluster() {
+    document.getElementById('cluster-view').style.display = 'none';
+    if (cdTimers['_cluster']) clearInterval(cdTimers['_cluster']);
+    currentMaker = null; currentCluster = null;
+}
+
+function renderCluster() {
+    const canvas = document.getElementById('cluster-canvas');
+    Object.keys(cdTimers).filter(k=>k.startsWith('w_')).forEach(k=>{clearInterval(cdTimers[k]);delete cdTimers[k];});
+    canvas.innerHTML = '';
+    const works = archive.filter(w => w.makerId === (currentMaker && currentMaker.id));
+    const color  = clusterColor(currentMaker ? currentMaker.role : 'maker');
+
+    if (works.length === 0 && canEdit(currentMaker && currentMaker.id)) {
+        const msg = document.createElement('div');
+        msg.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);opacity:0.3;text-align:center;';
+        msg.textContent = currentCluster ? 'CLUSTER ACTIVE — UPLOAD YOUR FIRST WORK' : 'START A CLUSTER TO BEGIN UPLOADING';
+        canvas.appendChild(msg);
+        return;
+    }
+
+    works.forEach((item, i) => {
+        const geo = shapeGeometry(item.mode);
+        const wrap = document.createElement('div');
+        wrap.className = 'shape-wrap';
+        wrap.dataset.id = item.id;
+        if (!workPos[item.id]) {
+            const cx = window.innerWidth/2-140, cy = window.innerHeight/2-100, spread = 220;
+            workPos[item.id] = { x: cx+(i%3-1)*spread+(i*47)%80, y: cy+Math.floor(i/3-0.5)*spread+(i*31)%60 };
+        }
+        const pos = workPos[item.id];
+        wrap.style.left=pos.x+'px'; wrap.style.top=pos.y+'px';
+        wrap.style.width=geo.w+'px'; wrap.style.height=geo.h+'px';
+
+        const shape = document.createElement('div');
+        shape.className = geo.cls;
+        shape.style.width='100%'; shape.style.height='100%'; shape.style.position='relative';
+        if (geo.type==='circle') shape.style.borderRadius='50%';
+        if (geo.rounded) shape.style.borderRadius='var(--radius-paid)';
+        shape.style.borderColor = color;
+
+        const isText   = item.mode === 'TEXT'   || item.mode === 'PAY_TEXT';
+        const isSlides = item.mode === 'SLIDES'  || item.mode === 'PAY_SLIDES';
+        const isPaid   = PAY_MODES.includes(item.mode);
+
+        if (isText) {
+            const titleArea = document.createElement('div'); titleArea.className='shape-text-title';
+            const titleMain = document.createElement('div'); titleMain.className='shape-text-title-main'; titleMain.textContent=item.title||'UNTITLED';
+            const titleSub  = document.createElement('div'); titleSub.className='shape-text-title-sub';  titleSub.textContent=item.artist||'';
+            titleArea.appendChild(titleMain); titleArea.appendChild(titleSub); shape.appendChild(titleArea);
+            if (item.materials) { const p=document.createElement('div'); p.className='shape-text-preview'; p.textContent=item.materials; shape.appendChild(p); }
+        } else if (isSlides) {
+            const inner=document.createElement('div'); inner.className='shape-slides-inner'; inner.style.borderColor=color; inner.style.opacity='0.35'; shape.appendChild(inner);
+            const t=document.createElement('div'); t.className='shape-title'; t.textContent=item.title||'UNTITLED'; shape.appendChild(t);
+            const l=document.createElement('div'); l.className='shape-label'; l.textContent=item.artist||''; shape.appendChild(l);
+        } else {
+            const t=document.createElement('div'); t.className='shape-title'; t.textContent=item.title||'UNTITLED'; shape.appendChild(t);
+            const l=document.createElement('div'); l.className='shape-label'; l.textContent=item.artist||''; shape.appendChild(l);
+        }
+
+        if (isPaid) { const b=document.createElement('div'); b.className='shape-paid-badge'; b.textContent='●'; shape.appendChild(b); }
+
+        const cd=document.createElement('div'); cd.className='shape-countdown'; shape.appendChild(cd);
+        const expiry=item.expiresAt||(item.uploadTime+86400000);
+        cdTimers['w_'+item.id]=setInterval(()=>{
+            const rem=expiry-Date.now();
+            if(rem<=0){clearInterval(cdTimers['w_'+item.id]);cd.textContent='EXPIRED';wrap.classList.add('expired');return;}
+            const h=Math.floor(rem/3600000),m=Math.floor((rem%3600000)/60000),s=Math.floor((rem%60000)/1000);
+            cd.textContent=pad(h)+':'+pad(m)+':'+pad(s);
+            if(rem<3600000)cd.classList.add('urgent');
+        },1000);
+
+        const invBtn=document.createElement('button');
+        invBtn.textContent='INVITE';
+        invBtn.style.cssText='position:absolute;bottom:10px;right:10px;background:none;border:none;font-size:8px;letter-spacing:1px;color:var(--accent);cursor:pointer;text-transform:uppercase;opacity:0.5;padding:2px 4px;-webkit-tap-highlight-color:transparent;';
+        invBtn.onmouseenter=()=>invBtn.style.opacity='1'; invBtn.onmouseleave=()=>invBtn.style.opacity='0.5';
+        invBtn.onclick=(e)=>{e.stopPropagation();showInvite(item);}; shape.appendChild(invBtn);
+
+        if (canEdit(item.makerId)) {
+            const actions=document.createElement('div'); actions.className='shape-actions';
+            const editBtn=document.createElement('button'); editBtn.className='shape-action-btn'; editBtn.textContent='✎';
+            editBtn.onclick=(e)=>{e.stopPropagation();openEditForm(e,item.id);};
+            const delBtn=document.createElement('button'); delBtn.className='shape-action-btn shape-del-btn'; delBtn.textContent='×';
+            delBtn.onclick=(e)=>{e.stopPropagation();deleteWork(item.id);};
+            actions.appendChild(editBtn); actions.appendChild(delBtn); shape.appendChild(actions);
+            actions.style.display='flex';
+        }
+
+        wrap.appendChild(shape);
+        wrap.onclick=()=>{ if(wrap._dragged){wrap._dragged=false;return;} activateWork(item); };
+        makeDraggableWork(wrap, item.id);
+        canvas.appendChild(wrap);
+    });
+}
+
+function shapeGeometry(mode) {
+    switch(mode) {
+        case 'VIDEO':       return { w:280, h:180, type:'rect',   cls:'shape-video' };
+        case 'PAY_VIDEO':   return { w:280, h:180, type:'rect',   cls:'shape-pay-video',   rounded:true };
+        case 'PERFORMANCE': return { w:180, h:180, type:'circle', cls:'shape-performance' };
+        case 'SOUND':       return { w:120, h:120, type:'rect',   cls:'shape-sound' };
+        case 'PAY_SOUND':   return { w:120, h:120, type:'rect',   cls:'shape-pay-sound',   rounded:true };
+        case 'WWW':         return { w:300, h:70,  type:'rect',   cls:'shape-www' };
+        case 'PAY_WWW':     return { w:300, h:70,  type:'rect',   cls:'shape-pay-www',     rounded:true };
+        case 'SLIDES':      return { w:280, h:180, type:'rect',   cls:'shape-slides' };
+        case 'PAY_SLIDES':  return { w:280, h:180, type:'rect',   cls:'shape-pay-slides',  rounded:true };
+        case 'IMAGE':       return { w:220, h:160, type:'rect',   cls:'shape-image' };
+        case 'PAY_IMAGE':   return { w:220, h:160, type:'rect',   cls:'shape-pay-image',   rounded:true };
+        case 'TEXT':        return { w:160, h:220, type:'rect',   cls:'shape-text' };
+        case 'PAY_TEXT':    return { w:160, h:220, type:'rect',   cls:'shape-pay-text',    rounded:true };
+        default:            return { w:200, h:140, type:'rect',   cls:'shape-image' };
+    }
+}
+
+/* ── DRAG ── */
+function makeDraggableIdentity(el, id) {
+    let down=false,sx,sy,ox,oy;
+    function start(cx,cy){ down=true;el._dragged=false;sx=cx;sy=cy;ox=parseFloat(el.style.left);oy=parseFloat(el.style.top); }
+    function move(cx,cy){ if(!down)return;const dx=cx-sx,dy=cy-sy;if(Math.abs(dx)>4||Math.abs(dy)>4)el._dragged=true;el.style.left=(ox+dx)+'px';el.style.top=(oy+dy)+'px';makerPos[id]={x:ox+dx,y:oy+dy}; }
+    function end(){ down=false; }
+    el.addEventListener('mousedown',(e)=>{ if(e.target.tagName==='BUTTON')return;start(e.clientX,e.clientY);e.preventDefault(); });
+    window.addEventListener('mousemove',(e)=>{ move(e.clientX,e.clientY); });
+    window.addEventListener('mouseup', end);
+    el.addEventListener('touchstart',(e)=>{ if(e.target.tagName==='BUTTON')return;const t=e.touches[0];start(t.clientX,t.clientY);e.preventDefault(); },{passive:false});
+    el.addEventListener('touchmove',(e)=>{ const t=e.touches[0];move(t.clientX,t.clientY);e.preventDefault(); },{passive:false});
+    el.addEventListener('touchend',(e)=>{ if(!el._dragged){ el.click(); } end(); });
+}
+function makeDraggableWork(el, id) {
+    let down=false,sx,sy,ox,oy;
+    function start(cx,cy){ down=true;el._dragged=false;sx=cx;sy=cy;ox=parseFloat(el.style.left);oy=parseFloat(el.style.top); }
+    function move(cx,cy){ if(!down)return;const dx=cx-sx,dy=cy-sy;if(Math.abs(dx)>4||Math.abs(dy)>4)el._dragged=true;el.style.left=(ox+dx)+'px';el.style.top=(oy+dy)+'px';workPos[id]={x:ox+dx,y:oy+dy}; }
+    function end(){ down=false; }
+    el.addEventListener('mousedown',(e)=>{ if(e.target.tagName==='BUTTON')return;start(e.clientX,e.clientY);e.preventDefault(); });
+    window.addEventListener('mousemove',(e)=>{ move(e.clientX,e.clientY); });
+    window.addEventListener('mouseup', end);
+    el.addEventListener('touchstart',(e)=>{ if(e.target.tagName==='BUTTON')return;const t=e.touches[0];start(t.clientX,t.clientY);e.preventDefault(); },{passive:false});
+    el.addEventListener('touchmove',(e)=>{ const t=e.touches[0];move(t.clientX,t.clientY);e.preventDefault(); },{passive:false});
+    // STEP 10: fire a click on tap (when not dragged) so work cards open on mobile — mirrors makeDraggableIdentity
+    el.addEventListener('touchend',(e)=>{ if(!el._dragged){ el.click(); } end(); });
+}
+
+/* ── ACTIVATE / WATCH ── */
+function activateWork(item) {
+    const isFreeMode = ['WWW','TEXT','SLIDES'].includes(item.mode);
+    if (!isFreeMode && item.accessCode && item.accessCode !== '') {
+        const pass = prompt('Enter access code to watch:');
+        if (!pass || pass.trim() !== item.accessCode.trim()) { alert('INVALID_CODE // ACCESS_DENIED'); return; }
+    }
+    openRoom(item);
+}
+
+function openRoom(item) {
+    activeWork = item;
+    if (item.mode==='TEXT'||item.mode==='PAY_TEXT') { openText(item); return; }
+    if ((item.mode==='WWW'||item.mode==='PAY_WWW') && item.linkUrl) { window.open(item.linkUrl,'_blank'); return; }
+    if ((item.mode==='SLIDES'||item.mode==='PAY_SLIDES') && (item.linkUrl||item.manualPath)) {
+        const room=document.getElementById('viewing-room'), container=document.getElementById('media-container');
+        container.innerHTML=''; room.style.display='flex'; document.body.style.overflow='hidden';
+        const iframe=document.createElement('iframe'); iframe.src=item.linkUrl||item.manualPath;
+        iframe.style.cssText='width:100%;height:100%;border:none;'; iframe.setAttribute('allowfullscreen','');
+        container.appendChild(iframe); return;
+    }
+    const room=document.getElementById('viewing-room'), container=document.getElementById('media-container');
+    if (vjsPlayer){vjsPlayer.dispose();vjsPlayer=null;}
+    container.innerHTML=''; room.style.display='flex'; document.body.style.overflow='hidden';
+    const cleanPath=(item.manualPath||'').split('?')[0].toLowerCase();
+    const ext=cleanPath.split('.').pop();
+    const isVideo=['mp4','mov','webm','avi','mkv','m4v','ogv'].includes(ext);
+    const isAudio=['mp3','m4a','wav','ogg','aac'].includes(ext);
+    if (isVideo) {
+        if ((item.manualPath||'').includes('dropbox.com')) {
+            const streamUrl=item.manualPath.replace('www.dropbox.com','dl.dropboxusercontent.com').replace('?dl=0','').replace('?dl=1','').replace('?raw=1','').split('?')[0];
+            const iframe=document.createElement('iframe'); iframe.src=streamUrl; iframe.style.cssText='width:100%;height:100%;border:none;'; iframe.setAttribute('allowfullscreen',''); iframe.setAttribute('allow','autoplay'); container.appendChild(iframe);
+        } else {
+            const v=document.createElement('video'); v.setAttribute('controls',''); v.setAttribute('autoplay',''); v.setAttribute('playsinline',''); v.style.cssText='max-width:100%;max-height:100%;width:auto;height:auto;'; v.src=item.manualPath; v.onerror=()=>{container.innerHTML='<div style="color:#fff;font-family:monospace;font-size:11px;text-align:center;">MEDIA NOT FOUND</div>';}; container.appendChild(v); v.play().catch(()=>{v.muted=true;v.play();});
+        }
+    } else if (isAudio) {
+        const w=document.createElement('div'); w.style.cssText='display:flex;flex-direction:column;align-items:center;gap:20px;'; const t=document.createElement('div'); t.style.cssText='color:#fff;font-family:monospace;font-size:12px;letter-spacing:2px;text-transform:uppercase;text-align:center;'; t.textContent=item.title; const a=document.createElement('audio'); a.controls=true; a.autoplay=true; a.src=item.manualPath; a.style.cssText='width:100%;max-width:380px;'; w.appendChild(t); w.appendChild(a); container.appendChild(w);
+    } else {
+        const img=document.createElement('img'); img.src=item.manualPath; img.style.cssText='max-width:100%;max-height:100%;object-fit:contain;'; img.onerror=()=>{container.innerHTML='<div style="color:#fff;font-family:monospace;font-size:11px;">MEDIA NOT FOUND</div>';}; container.appendChild(img);
+    }
+}
+
+function closeRoom() { if(vjsPlayer){vjsPlayer.dispose();vjsPlayer=null;} document.getElementById('viewing-room').style.display='none'; document.getElementById('media-container').innerHTML=''; document.body.style.overflow='hidden'; setViewBg('#000000'); }
+function setViewBg(c){ document.getElementById('viewing-room').style.backgroundColor=c; }
+function openText(item) { document.getElementById('text-title').textContent=item.title||''; document.getElementById('text-author').textContent=item.artist||''; document.getElementById('text-body').textContent=item.materials||''; document.getElementById('text-overlay').style.display='block'; document.getElementById('text-overlay').scrollTop=0; }
+function closeText() { document.getElementById('text-overlay').style.display='none'; }
+
+/* ── INVITE ── */
+function showInvite(item) {
+    const clusterTitle=currentCluster?currentCluster.title:''; const codeLine=item.accessCode?`\nAccess code (after payment): ${item.accessCode}`:'';
+    const msg=`You are invited to watch:\n\n"${item.title}"${item.artist?' by '+item.artist:''} (${item.year})${clusterTitle?'\nCluster: '+clusterTitle:''}\n\nAvailable for 24 hours only.\n${DATAROOM_URL}${codeLine}`;
+    document.getElementById('invite-text').textContent=msg; document.getElementById('invite-overlay').style.display='flex'; activeWork=item;
+}
+function closeInvite(e){if(e.target.id==='invite-overlay')document.getElementById('invite-overlay').style.display='none';}
+function copyInvite(){navigator.clipboard.writeText(document.getElementById('invite-text').textContent).then(()=>log('INVITE_COPIED'));}
+function emailInvite(){ if(!activeWork)return; const sub=encodeURIComponent('Invitation: '+activeWork.title+' — COMMONS ON DEMAND 24H'); const body=encodeURIComponent(document.getElementById('invite-text').textContent); window.location.href='mailto:?subject='+sub+'&body='+body; }
+
+/* ── PROFILE FORM ── */
+function openProfileForm(){ document.getElementById('profileForm').reset(); document.getElementById('profile-id').value=''; document.getElementById('profile-title').textContent='Create Profile'; document.getElementById('profile-submit').textContent='CREATE PROFILE'; document.getElementById('profile-section').style.display='flex'; }
+function openEditProfile(id){ const m=makers.find(x=>String(x.id)===String(id));if(!m)return; document.getElementById('profile-id').value=m.id; document.getElementById('p-name').value=m.name||''; document.getElementById('p-initials').value=m.initials||''; document.getElementById('p-city').value=m.city||''; document.getElementById('p-role').value=m.role||'maker'; document.getElementById('p-code').value=m.accessCode||''; document.getElementById('profile-title').textContent='Edit Profile'; document.getElementById('profile-submit').textContent='UPDATE PROFILE'; document.getElementById('profile-section').style.display='flex'; }
+function closeProfileForm(){ document.getElementById('profile-section').style.display='none'; }
+
+document.getElementById('profileForm').onsubmit=async function(e){
+    e.preventDefault();
+    const editId=document.getElementById('profile-id').value;
+    const name=document.getElementById('p-name').value.trim();
+    const data={ name, initials:document.getElementById('p-initials').value.trim().toUpperCase()||getInitials(name), city:document.getElementById('p-city').value.trim(), role:document.getElementById('p-role').value, accessCode:document.getElementById('p-code').value.trim() };
+    const submitBtn=document.getElementById('profile-submit'); const original=submitBtn.textContent; submitBtn.disabled=true; submitBtn.textContent='SAVING…';
+    try {
+        if(editId){ await apiFetch('/api/makers/'+editId,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); }
+        else { await apiFetch('/api/makers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); }
+        closeProfileForm(); await loadArchive();
+    } catch(err){ if(err.message!=='unauthorized') alert('Could not save profile: '+err.message); }
+    finally{ submitBtn.disabled=false; submitBtn.textContent=original; }
+};
+
+async function deleteMaker(id){ if(!confirm('Delete this profile and all its works?')) return; try { await apiFetch('/api/makers/'+id,{method:'DELETE'}); delete makerPos[id]; await loadArchive(); } catch(err){ if(err.message!=='unauthorized') alert('Could not delete: '+err.message); } }
+
+/* ── CLUSTER FORM ── */
+function openClusterForm(){ document.getElementById('clusterForm').reset(); document.getElementById('cluster-edit-id').value=''; document.getElementById('cluster-form-section').style.display='flex'; }
+function closeClusterForm(){ document.getElementById('cluster-form-section').style.display='none'; }
+
+document.getElementById('clusterForm').onsubmit=async function(e){
+    e.preventDefault(); if(!currentMaker) return;
+    const title=document.getElementById('cl-title').value.trim();
+    const submitBtn=document.getElementById('cluster-submit'); const original=submitBtn.textContent; submitBtn.disabled=true; submitBtn.textContent='STARTING…';
+    try {
+        await apiFetch('/api/clusters',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({makerId:currentMaker.id,title})});
+        closeClusterForm(); await loadArchive(); const updatedMaker=makers.find(m=>m.id===currentMaker.id); if(updatedMaker) openCluster(updatedMaker);
+    } catch(err){ if(err.message!=='unauthorized') alert('Could not start cluster: '+err.message); }
+    finally{ submitBtn.disabled=false; submitBtn.textContent=original; }
+};
+
+/* ── WORK FORM ── */
+function openUploadForm() {
+    const hasData = document.getElementById('title').value.trim() !== '';
+    if (!hasData) {
+        document.getElementById('archiveForm').reset(); document.getElementById('editing-id').value=''; document.getElementById('form-title').textContent='Upload Work'; document.getElementById('submit-btn').textContent='COMMIT';
+        document.getElementById('form-preview-container').innerHTML='<span style="font-size:9px;opacity:0.3;font-family:monospace;">PREVIEW</span>';
+        if(currentMaker) document.getElementById('artist').value=currentMaker.name||'';
+        handleModeChange('VIDEO');
+    }
+    document.getElementById('reg-section').style.display='flex';
+}
+function closeUploadForm(){ document.getElementById('reg-section').style.display='none'; }
+function handleBgClick(e){ if(e.target.id==='reg-section') closeUploadForm(); }
+function toggleReg(){ const s=document.getElementById('reg-section'); if(s.style.display==='none'||s.style.display==='') openUploadForm(); else closeUploadForm(); }
+
+function generateCode(fieldId){ const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let code=''; for(let i=0;i<6;i++)code+=chars[Math.floor(Math.random()*chars.length)]; document.getElementById(fieldId).value=code; }
+
+let pendingUpload=null;
+function handleFileSelection(input){
+    const file=input.files[0]; if(!file) return;
+    const container=document.getElementById('form-preview-container'); const src=URL.createObjectURL(file);
+    if(file.type.startsWith('video')){ container.innerHTML=`<video src="${src}" muted preload="metadata" style="pointer-events:none;max-height:100%;"></video>`; }
+    else if(file.type.startsWith('audio')){ container.innerHTML=`<div style="font-family:monospace;font-size:11px;opacity:0.5;">♪ ${file.name}</div>`; }
+    else { container.innerHTML=`<img src="${src}" style="max-height:100%;max-width:100%;object-fit:contain;">`; }
+    const pathField=document.getElementById('manualPath'); const submitBtn=document.getElementById('submit-btn'); const originalLabel=submitBtn.textContent;
+    pathField.value='UPLOADING…'; pathField.disabled=true; submitBtn.disabled=true; submitBtn.textContent='UPLOADING FILE…'; log('UPLOADING…');
+    const fd=new FormData(); fd.append('file',file);
+    pendingUpload=apiFetch('/api/upload',{method:'POST',body:fd}).then(res=>res.json()).then(data=>{ if(data.error) throw new Error(data.error); pathField.value=data.url; log('UPLOAD_COMPLETE'); }).catch(err=>{ pathField.value=''; if(err.message!=='unauthorized') alert('Upload failed: '+err.message); log('UPLOAD_ERROR'); }).finally(()=>{ pathField.disabled=false; submitBtn.disabled=false; submitBtn.textContent=originalLabel; pendingUpload=null; });
+}
+
+function openEditForm(e,id){
+    e.stopPropagation(); const item=archive.find(i=>String(i.id)===String(id)); if(!item) return;
+    document.getElementById('editing-id').value=item.id; document.getElementById('year').value=item.year||''; document.getElementById('title').value=item.title||''; document.getElementById('mode').value=item.mode||'VIDEO'; document.getElementById('artist').value=item.artist||''; document.getElementById('materials').value=item.materials||''; document.getElementById('manualPath').value=item.manualPath||''; document.getElementById('linkUrl').value=item.linkUrl||''; document.getElementById('accessCode').value=item.accessCode||'';
+    document.getElementById('form-title').textContent='Edit Entry'; document.getElementById('submit-btn').textContent='UPDATE';
+    handleModeChange(item.mode||'VIDEO'); document.getElementById('reg-section').style.display='flex';
+}
+
+function sanitizeMediaPath(path){ if(!path) return ''; const match=path.match(/^https?:\/\/f\d+\.backblazeb2\.com\/file\/commons-on-demand\/(.+)$/i); if(match) return 'https://media.commons-on-demand.com/'+match[1]; return path; }
+
+document.getElementById('archiveForm').onsubmit=async function(e){
+    e.preventDefault(); if(pendingUpload){ await pendingUpload; }
+    const editingId=document.getElementById('editing-id').value;
+    const entryData={ year:document.getElementById('year').value, mode:document.getElementById('mode').value, title:document.getElementById('title').value.trim()||'UNTITLED', artist:document.getElementById('artist').value.trim(), materials:document.getElementById('materials').value, manualPath:sanitizeMediaPath(document.getElementById('manualPath').value.trim()), linkUrl:document.getElementById('linkUrl').value.trim(), accessCode:document.getElementById('accessCode').value.trim(), makerId:currentMaker?currentMaker.id:null, clusterId:currentCluster?currentCluster.id:null };
+    const submitBtn=document.getElementById('submit-btn'); const original=submitBtn.textContent; submitBtn.disabled=true; submitBtn.textContent='SAVING…';
+    try {
+        if(editingId){ await apiFetch('/api/works/'+editingId,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(entryData)}); }
+        else { await apiFetch('/api/works',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(entryData)}); }
+        closeUploadForm(); await loadArchive(); if(currentMaker) renderCluster(); else renderMain();
+    } catch(err){ if(err.message!=='unauthorized') alert('Could not save work: '+err.message); }
+    finally{ submitBtn.disabled=false; submitBtn.textContent=original; }
+};
+
+async function deleteWork(id){ if(!confirm('Delete this work?')) return; try { await apiFetch('/api/works/'+id,{method:'DELETE'}); delete workPos[id]; await loadArchive(); if(currentMaker)renderCluster(); } catch(err){ if(err.message!=='unauthorized') alert('Could not delete: '+err.message); } }
+
+/* ── EXPORT ── */
+async function exportData(){ try { const res=await fetch(WORKER_URL+'/api/data'); const data=await res.json(); const s='data:text/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(data,null,2)); const a=document.createElement('a'); a.href=s; a.download='commons-backup-'+Date.now()+'.json'; document.body.appendChild(a); a.click(); a.remove(); log('EXPORT_COMPLETE'); } catch(err){ alert('Export failed: '+err.message); } }
+
+function toggleMode(){ document.body.classList.toggle('light-mode'); }
+function log(msg){ document.getElementById('console-display').textContent=msg; }
+function pad(n){ return String(n).padStart(2,'0'); }
+function getInitials(name){ if(!name)return'?'; return name.split(' ').map(p=>p[0]).join('').toUpperCase().slice(0,3); }
+
+// Init
+applyAuthUI();
+loadArchive();
+</script>
+</body>
+</html>
