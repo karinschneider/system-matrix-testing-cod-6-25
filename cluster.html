@@ -275,47 +275,22 @@
     <div id="cluster-canvas"></div>
 </div>
 
-<!-- SIGN IN / CHANGE PASSWORD OVERLAY (merged — single container) -->
+<!-- SIGN IN OVERLAY -->
 <div id="signin-section" class="overlay" onclick="if(event.target.id==='signin-section')closeSignIn()">
     <div class="auth-container" onclick="event.stopPropagation()">
         <div class="form-close" onclick="closeSignIn()">×</div>
-
-        <!-- VIEW: SIGN IN (shown when signed out) -->
-        <div id="signin-form">
-            <div class="auth-title">Sign In</div>
-            <div class="auth-error" id="signin-error"></div>
-            <div class="auth-field">
-                <label>Email</label>
-                <input type="email" id="signin-email" placeholder="your@email.com" autocomplete="email">
-            </div>
-            <div class="auth-field">
-                <label>Password</label>
-                <input type="password" id="signin-password" placeholder="••••••••" autocomplete="current-password">
-            </div>
-            <button class="btn" style="width:100%;padding:10px;margin-top:8px;font-size:10px;" onclick="doSignIn()">SIGN IN</button>
-            <div class="auth-switch" onclick="switchToRegister()">Have an invite code? Create account →</div>
+        <div class="auth-title">Sign In</div>
+        <div class="auth-error" id="signin-error"></div>
+        <div class="auth-field">
+            <label>Email</label>
+            <input type="email" id="signin-email" placeholder="your@email.com" autocomplete="email">
         </div>
-
-        <!-- VIEW: CHANGE PASSWORD (shown when signed in) -->
-        <div id="signin-change-pw" style="display:none;">
-            <div class="auth-title">Change Password</div>
-            <div class="auth-error" id="change-password-error"></div>
-            <div class="auth-field">
-                <label>Current Password</label>
-                <input type="password" id="cp-current" placeholder="••••••••" autocomplete="current-password">
-            </div>
-            <div class="auth-field">
-                <label>New Password</label>
-                <input type="password" id="cp-new" placeholder="Min 8 characters" autocomplete="new-password">
-            </div>
-            <div class="auth-field">
-                <label>Confirm New Password</label>
-                <input type="password" id="cp-confirm" placeholder="Repeat new password" autocomplete="new-password">
-            </div>
-            <div id="change-password-success" style="font-size:9px;color:#7FFF00;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;display:none;">PASSWORD UPDATED — SIGN IN AGAIN</div>
-            <button class="btn" style="width:100%;padding:10px;font-size:10px;" onclick="doChangePassword()">UPDATE PASSWORD</button>
+        <div class="auth-field">
+            <label>Password</label>
+            <input type="password" id="signin-password" placeholder="••••••••" autocomplete="current-password">
         </div>
-
+        <button class="btn" style="width:100%;padding:10px;margin-top:8px;font-size:10px;" onclick="doSignIn()">SIGN IN</button>
+        <div class="auth-switch" onclick="switchToRegister()">Have an invite code? Create account →</div>
     </div>
 </div>
 
@@ -400,6 +375,27 @@
             <button type="submit" id="profile-submit" class="btn" style="grid-column:span 2;margin-top:8px;padding:10px;font-size:10px;">CREATE PROFILE</button>
             <button type="button" class="btn" onclick="closeProfileForm()" style="grid-column:span 2;border:none;opacity:0.3;font-size:10px;">CANCEL</button>
         </form>
+
+        <!-- CHANGE PASSWORD — shown only when editing your own profile -->
+        <div id="profile-changepw-section" style="display:none; margin-top:24px; padding-top:20px; border-top:1px solid var(--border);">
+            <div class="auth-title" style="margin-bottom:16px;">Change Password</div>
+            <div class="auth-error" id="change-password-error"></div>
+            <div class="auth-field">
+                <label>Current Password</label>
+                <input type="password" id="cp-current" placeholder="••••••••" autocomplete="current-password">
+            </div>
+            <div class="auth-field">
+                <label>New Password</label>
+                <input type="password" id="cp-new" placeholder="Min 8 characters" autocomplete="new-password">
+            </div>
+            <div class="auth-field">
+                <label>Confirm New Password</label>
+                <input type="password" id="cp-confirm" placeholder="Repeat new password" autocomplete="new-password">
+            </div>
+            <div id="change-password-success" style="font-size:9px;color:#7FFF00;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;display:none;">PASSWORD UPDATED — SIGN IN AGAIN</div>
+            <button class="btn" style="width:100%;padding:10px;font-size:10px;" onclick="doChangePassword()">UPDATE PASSWORD</button>
+        </div>
+
     </div>
 </div>
 
@@ -557,24 +553,10 @@ const PAY_MODES = ['PAY_VIDEO','PAY_SOUND','PAY_WWW','PAY_SLIDES','PAY_IMAGE','P
 
 /* ── AUTH UI ── */
 function openSignIn() {
-    // Single entry point: signed in -> change-password view; signed out -> sign-in view
+    if (authToken) return; // signed in — change password now lives on the profile page
     document.getElementById('signin-section').style.display = 'flex';
-    if (authToken) { showChangePassword(); } else { showSignIn(); }
-}
-function showSignIn() {
-    document.getElementById('signin-form').style.display = 'block';
-    document.getElementById('signin-change-pw').style.display = 'none';
     document.getElementById('signin-error').style.display = 'none';
     setTimeout(() => { const el = document.getElementById('signin-email'); if (el) el.focus(); }, 100);
-}
-function showChangePassword() {
-    document.getElementById('signin-form').style.display = 'none';
-    document.getElementById('signin-change-pw').style.display = 'block';
-    document.getElementById('change-password-error').style.display = 'none';
-    document.getElementById('change-password-success').style.display = 'none';
-    document.getElementById('cp-current').value = '';
-    document.getElementById('cp-new').value = '';
-    document.getElementById('cp-confirm').value = '';
 }
 function closeSignIn() { document.getElementById('signin-section').style.display = 'none'; }
 function openSignUp()  { document.getElementById('signup-section').style.display = 'flex'; document.getElementById('signup-error').style.display = 'none'; }
@@ -687,11 +669,6 @@ async function generateInvite() {
 }
 
 
-function openChangePassword() {
-    document.getElementById('signin-section').style.display = 'flex';
-    showChangePassword();
-}
-function closeChangePassword() { closeSignIn(); }
 async function doChangePassword() {
     const current = document.getElementById('cp-current').value;
     const newPw   = document.getElementById('cp-new').value;
@@ -710,7 +687,7 @@ async function doChangePassword() {
         const data = await res.json();
         if (!res.ok) { errEl.textContent = data.error.toUpperCase(); errEl.style.display = 'block'; return; }
         okEl.style.display = 'block';
-        setTimeout(() => { closeChangePassword(); signOut(); }, 2000);
+        setTimeout(() => { closeProfileForm(); signOut(); }, 2000);
     } catch(e) { errEl.textContent = 'CONNECTION ERROR'; errEl.style.display = 'block'; }
 }
 
@@ -1121,8 +1098,14 @@ function copyInvite(){navigator.clipboard.writeText(document.getElementById('inv
 function emailInvite(){ if(!activeWork)return; const sub=encodeURIComponent('Invitation: '+activeWork.title+' — COMMONS ON DEMAND 24H'); const body=encodeURIComponent(document.getElementById('invite-text').textContent); window.location.href='mailto:?subject='+sub+'&body='+body; }
 
 /* ── PROFILE FORM ── */
-function openProfileForm(){ document.getElementById('profileForm').reset(); document.getElementById('profile-id').value=''; document.getElementById('profile-title').textContent='Create Profile'; document.getElementById('profile-submit').textContent='CREATE PROFILE'; document.getElementById('profile-section').style.display='flex'; }
-function openEditProfile(id){ const m=makers.find(x=>String(x.id)===String(id));if(!m)return; document.getElementById('profile-id').value=m.id; document.getElementById('p-name').value=m.name||''; document.getElementById('p-initials').value=m.initials||''; document.getElementById('p-city').value=m.city||''; document.getElementById('p-role').value=m.role||'maker'; document.getElementById('p-code').value=m.accessCode||''; document.getElementById('profile-title').textContent='Edit Profile'; document.getElementById('profile-submit').textContent='UPDATE PROFILE'; document.getElementById('profile-section').style.display='flex'; }
+function openProfileForm(){ document.getElementById('profileForm').reset(); document.getElementById('profile-id').value=''; document.getElementById('profile-title').textContent='Create Profile'; document.getElementById('profile-submit').textContent='CREATE PROFILE'; document.getElementById('profile-changepw-section').style.display='none'; document.getElementById('profile-section').style.display='flex'; }
+function openEditProfile(id){ const m=makers.find(x=>String(x.id)===String(id));if(!m)return; document.getElementById('profile-id').value=m.id; document.getElementById('p-name').value=m.name||''; document.getElementById('p-initials').value=m.initials||''; document.getElementById('p-city').value=m.city||''; document.getElementById('p-role').value=m.role||'maker'; document.getElementById('p-code').value=m.accessCode||''; document.getElementById('profile-title').textContent='Edit Profile'; document.getElementById('profile-submit').textContent='UPDATE PROFILE';
+    const isOwn = !!authToken && String(authMakerId)===String(id);
+    document.getElementById('profile-changepw-section').style.display = isOwn ? 'block' : 'none';
+    document.getElementById('change-password-error').style.display='none';
+    document.getElementById('change-password-success').style.display='none';
+    document.getElementById('cp-current').value=''; document.getElementById('cp-new').value=''; document.getElementById('cp-confirm').value='';
+    document.getElementById('profile-section').style.display='flex'; }
 function closeProfileForm(){ document.getElementById('profile-section').style.display='none'; }
 
 document.getElementById('profileForm').onsubmit=async function(e){
