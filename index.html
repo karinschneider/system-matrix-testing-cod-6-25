@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>COMMONS ON DEMAND</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: #000;
+            color: #fff;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            overflow: hidden;
+            width: 100vw; height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        body.light-mode { background: #fff; color: #000; }
+
+        /* HEADER */
+        #header {
+            position: fixed; top: 0; left: 0; right: 0;
+            padding: 20px 24px;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 100; pointer-events: none;
+        }
+        #header > * { pointer-events: auto; }
+        .title {
+            font-size: 11px; font-weight: bold; letter-spacing: 3px;
+            text-transform: uppercase; color: #fff; opacity: 0.8;
+            text-decoration: none;
+        }
+        body.light-mode .title { color: #000; }
+        #live-count {
+            font-size: 9px; letter-spacing: 2px; font-family: monospace;
+            color: #fff; opacity: 0.3;
+        }
+        body.light-mode #live-count { color: #000; }
+        .btn {
+            background: none; border: 1px solid rgba(255,255,255,0.5); color: #fff;
+            padding: 4px 10px; font-size: 9px; cursor: pointer; text-transform: uppercase;
+            transition: 0.2s; letter-spacing: 1px; font-weight: bold;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body.light-mode .btn { border-color: rgba(0,0,0,0.5); color: #000; }
+        .btn:hover { background: rgba(255,255,255,0.15); }
+        body.light-mode .btn:hover { background: rgba(0,0,0,0.1); }
+
+        /* GLOBE */
+        #globe-canvas {
+            position: fixed; top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            cursor: grab;
+        }
+        #globe-canvas.dragging { cursor: grabbing; }
+
+        /* TERMINAL FEED */
+        #feed {
+            position: fixed;
+            top: 0; right: 0;
+            width: 320px; height: 100vh;
+            padding: 70px 24px 40px;
+            display: flex; flex-direction: column; justify-content: flex-end;
+            pointer-events: none;
+            z-index: 50;
+        }
+        #feed-inner {
+            display: flex; flex-direction: column; gap: 14px;
+        }
+        .feed-line {
+            font-family: monospace;
+            font-size: 9px; letter-spacing: 1px;
+            text-transform: uppercase;
+            line-height: 1.6;
+            cursor: pointer;
+            pointer-events: auto;
+            opacity: 0;
+            transition: opacity 0.5s;
+            border-left: 1px solid rgba(255,255,255,0.1);
+            padding-left: 10px;
+        }
+        .feed-line.visible { opacity: 1; }
+        .feed-line:hover { border-left-color: rgba(255,255,255,0.4); }
+        .feed-city { color: rgba(255,255,255,0.35); display: block; font-size: 8px; }
+        .feed-cluster { color: rgba(255,255,255,0.8); display: block; font-weight: bold; }
+        .feed-name { color: rgba(255,255,255,0.4); display: block; }
+        .feed-time { display: block; margin-top: 2px; }
+        .feed-time.urgent { color: #ff4444; }
+
+        body.light-mode .feed-line { border-left-color: rgba(0,0,0,0.1); }
+        body.light-mode .feed-line:hover { border-left-color: rgba(0,0,0,0.4); }
+        body.light-mode .feed-city { color: rgba(0,0,0,0.35); }
+        body.light-mode .feed-cluster { color: rgba(0,0,0,0.8); }
+        body.light-mode .feed-name { color: rgba(0,0,0,0.4); }
+
+        /* BOTTOM */
+        #bottom {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            padding: 16px 24px;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 100; pointer-events: none;
+        }
+        #console-msg {
+            font-family: monospace; font-size: 9px;
+            color: rgba(255,255,255,0.25); letter-spacing: 1px;
+        }
+        body.light-mode #console-msg { color: rgba(0,0,0,0.25); }
+        #enter-link {
+            font-size: 9px; letter-spacing: 2px; text-transform: uppercase;
+            color: rgba(255,255,255,0.3); text-decoration: none;
+            pointer-events: auto;
+            transition: color 0.2s;
+        }
+        body.light-mode #enter-link { color: rgba(0,0,0,0.3); }
+        #enter-link:hover { color: rgba(255,255,255,0.8); }
+        body.light-mode #enter-link:hover { color: rgba(0,0,0,0.8); }
+
+        /* TOOLTIP */
+        #tooltip {
+            position: fixed; pointer-events: none; z-index: 200;
+            font-family: monospace; font-size: 8px; letter-spacing: 2px;
+            text-transform: uppercase; color: rgba(255,255,255,0.7);
+            background: rgba(0,0,0,0.8);
+            padding: 6px 10px;
+            display: none;
+        }
+
+        /* MOBILE */
+        @media (max-width: 700px) {
+            #feed { width: 100%; padding: 70px 16px 120px; }
+            .feed-line { font-size: 8px; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="header">
+    <a class="title" href="index.html">COMMONS ON DEMAND</a>
+    <div style="display:flex;gap:8px;align-items:center;">
+        <span id="live-count"></span>
+        <button class="btn" onclick="toggleMode()">◐</button>
+    </div>
+</div>
+
+<canvas id="globe-canvas"></canvas>
+
+<div id="feed">
+    <div id="feed-inner"></div>
+</div>
+
+<div id="bottom">
+    <div id="console-msg">THE EARTH IS OUR COMMONS</div>
+    <a id="enter-link" href="cluster.html">ENTER →</a>
+    <div style="font-size:7px;letter-spacing:2px;color:rgba(255,255,255,0.15);">2026 © commons-on-demand.com</div>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+const WORKER_URL = 'https://commons-on-demand-api.pb6w4bwg2n.workers.dev';
+const CLUSTER_URL = 'cluster.html';
+
+let makers   = [];
+let clusters = [];
+let archive  = [];
+let rot      = 0;
+let cdTimers = {};
+
+// Globe drag state
+let isDragging   = false;
+let dragStartX   = 0;
+let dragRotStart = 0;
+let lastDragX    = 0;
+let dragVelocity = 0;
+let autoRotate   = true;
+
+/* ── CANVAS SETUP ── */
+const canvas = document.getElementById('globe-canvas');
+const ctx    = canvas.getContext('2d');
+let W, H, cx, cy, R;
+
+function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+    cx = W / 2;
+    cy = H / 2;
+    R  = Math.min(W, H) * 0.38;
+}
+resize();
+window.addEventListener('resize', resize);
+
+/* ── GLOBE DRAG ── */
+canvas.addEventListener('mousedown', (e) => {
+    isDragging   = true;
+    autoRotate   = false;
+    dragStartX   = e.clientX;
+    dragRotStart = rot;
+    lastDragX    = e.clientX;
+    dragVelocity = 0;
+    canvas.classList.add('dragging');
+});
+window.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    const dx = e.clientX - lastDragX;
+    dragVelocity = dx;
+    lastDragX = e.clientX;
+    const totalDx = e.clientX - dragStartX;
+    rot = dragRotStart + totalDx * 0.3;
+});
+window.addEventListener('mouseup', () => {
+    if (!isDragging) return;
+    isDragging = false;
+    canvas.classList.remove('dragging');
+    // Resume auto-rotate after 2s of no dragging
+    setTimeout(() => { autoRotate = true; }, 2000);
+});
+
+// Touch drag
+canvas.addEventListener('touchstart', (e) => {
+    const t = e.touches[0];
+    isDragging   = true;
+    autoRotate   = false;
+    dragStartX   = t.clientX;
+    dragRotStart = rot;
+    lastDragX    = t.clientX;
+    dragVelocity = 0;
+}, { passive: true });
+canvas.addEventListener('touchmove', (e) => {
+    if (!isDragging) return;
+    const t = e.touches[0];
+    const dx = t.clientX - lastDragX;
+    dragVelocity = dx;
+    lastDragX = t.clientX;
+    const totalDx = t.clientX - dragStartX;
+    rot = dragRotStart + totalDx * 0.3;
+}, { passive: true });
+canvas.addEventListener('touchend', () => {
+    isDragging = false;
+    setTimeout(() => { autoRotate = true; }, 2000);
+});
+
+/* ── CITY COORDINATES ── */
+const CITY_COORDS = {
+    'new york':        { lat: 40.71,  lon: -74.01 },
+    'new york city':   { lat: 40.71,  lon: -74.01 },
+    'nyc':             { lat: 40.71,  lon: -74.01 },
+    'paris':           { lat: 48.85,  lon:   2.35 },
+    'rio de janeiro':  { lat: -22.90, lon: -43.17 },
+    'rio':             { lat: -22.90, lon: -43.17 },
+    'vienna':          { lat: 48.21,  lon:  16.37 },
+    'london':          { lat: 51.51,  lon:  -0.13 },
+    'berlin':          { lat: 52.52,  lon:  13.40 },
+    'tokyo':           { lat: 35.68,  lon: 139.69 },
+    'japan':           { lat: 36.20,  lon: 138.25 },
+    'beijing':         { lat: 39.91,  lon: 116.39 },
+    'shanghai':        { lat: 31.23,  lon: 121.47 },
+    'los angeles':     { lat: 34.05,  lon: -118.24 },
+    'la':              { lat: 34.05,  lon: -118.24 },
+    'chicago':         { lat: 41.88,  lon: -87.63 },
+    'san francisco':   { lat: 37.77,  lon: -122.42 },
+    'sf':              { lat: 37.77,  lon: -122.42 },
+    'toronto':         { lat: 43.65,  lon: -79.38 },
+    'montreal':        { lat: 45.50,  lon: -73.57 },
+    'mexico city':     { lat: 19.43,  lon: -99.13 },
+    'buenos aires':    { lat: -34.60, lon: -58.38 },
+    'lagos':           { lat:  6.52,  lon:   3.38 },
+    'cairo':           { lat: 30.04,  lon:  31.24 },
+    'nairobi':         { lat: -1.29,  lon:  36.82 },
+    'mumbai':          { lat: 19.08,  lon:  72.88 },
+    'delhi':           { lat: 28.66,  lon:  77.23 },
+    'sydney':          { lat: -33.87, lon: 151.21 },
+    'seoul':           { lat: 37.57,  lon: 126.98 },
+    'amsterdam':       { lat: 52.37,  lon:   4.90 },
+    'barcelona':       { lat: 41.39,  lon:   2.15 },
+    'rome':            { lat: 41.90,  lon:  12.50 },
+    'madrid':          { lat: 40.42,  lon:  -3.70 },
+    'lisbon':          { lat: 38.72,  lon:  -9.14 },
+    'stockholm':       { lat: 59.33,  lon:  18.07 },
+    'oslo':            { lat: 59.91,  lon:  10.75 },
+    'copenhagen':      { lat: 55.68,  lon:  12.57 },
+    'zurich':          { lat: 47.38,  lon:   8.54 },
+    'brussels':        { lat: 50.85,  lon:   4.35 },
+    'prague':          { lat: 50.08,  lon:  14.44 },
+    'warsaw':          { lat: 52.23,  lon:  21.01 },
+    'athens':          { lat: 37.98,  lon:  23.73 },
+    'istanbul':        { lat: 41.01,  lon:  28.95 },
+    'moscow':          { lat: 55.75,  lon:  37.62 },
+    'dubai':           { lat: 25.20,  lon:  55.27 },
+    'singapore':       { lat:  1.35,  lon: 103.82 },
+    'hong kong':       { lat: 22.32,  lon: 114.17 },
+    'cape town':       { lat: -33.92, lon:  18.42 },
+    'johannesburg':    { lat: -26.20, lon:  28.04 },
+    'sao paulo':       { lat: -23.55, lon: -46.63 },
+    'bogota':          { lat:  4.71,  lon: -74.07 },
+    'lima':            { lat: -12.05, lon: -77.04 },
+    'santiago':        { lat: -33.45, lon: -70.67 },
+};
+
+function getCityCoords(cityName) {
+    if (!cityName) return null;
+    return CITY_COORDS[cityName.toLowerCase().trim()] || null;
+}
+
+function roleColor(role) {
+    if (role === 'filmmaker')   return '#4a7fa5';
+    if (role === 'musician')    return '#e8453c';
+    if (role === 'writer')      return '#e07b3a';
+    if (role === 'curator')     return '#d4c84a';
+    if (role === 'nonprofit')   return '#7FFF00';
+    if (role === 'institution') return '#ffffff';
+    return '#c45c7a';
+}
+
+/* ── 3D PROJECTION ── */
+function latLonTo3D(lat, lon, rotation) {
+    const phi   = (90 - lat) * Math.PI / 180;
+    const theta = (lon + rotation) * Math.PI / 180;
+    const x3 = R * Math.sin(phi) * Math.cos(theta);
+    const y3 = R * Math.cos(phi);
+    const z3 = R * Math.sin(phi) * Math.sin(theta);
+    return { x: cx + x3, y: cy - y3, z: z3, visible: z3 > -R * 0.1 };
+}
+
+/* ── DRAW ── */
+function drawGlobe(rotation) {
+    ctx.clearRect(0, 0, W, H);
+
+    // Sphere base
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.fillStyle = '#03030f';
+    ctx.fill();
+
+    // Sphere light
+    const sphereLight = ctx.createRadialGradient(cx - R * 0.3, cy - R * 0.3, 0, cx, cy, R);
+    sphereLight.addColorStop(0, 'rgba(30,50,120,0.35)');
+    sphereLight.addColorStop(0.5, 'rgba(10,20,60,0.1)');
+    sphereLight.addColorStop(1, 'rgba(0,0,0,0.6)');
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.fillStyle = sphereLight;
+    ctx.fill();
+
+    // Atmosphere rim
+    const grad = ctx.createRadialGradient(cx, cy, R * 0.88, cx, cy, R * 1.08);
+    grad.addColorStop(0, 'rgba(40,60,180,0.0)');
+    grad.addColorStop(0.7, 'rgba(40,80,220,0.12)');
+    grad.addColorStop(1, 'rgba(60,100,255,0.28)');
+    ctx.beginPath();
+    ctx.arc(cx, cy, R * 1.08, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Grid lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 0.5;
+    for (let lat = -60; lat <= 60; lat += 30) {
+        ctx.beginPath();
+        let started = false;
+        for (let lon = -180; lon <= 180; lon += 2) {
+            const p = latLonTo3D(lat, lon, rotation);
+            if (!p.visible) { started = false; continue; }
+            started ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y);
+            started = true;
+        }
+        ctx.stroke();
+    }
+    for (let lon = -180; lon < 180; lon += 30) {
+        ctx.beginPath();
+        let started = false;
+        for (let lat = -80; lat <= 80; lat += 2) {
+            const p = latLonTo3D(lat, lon, rotation);
+            if (!p.visible) { started = false; continue; }
+            started ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y);
+            started = true;
+        }
+        ctx.stroke();
+    }
+
+    // City dots
+    const now = Date.now();
+    makers.forEach(maker => {
+        const coords = getCityCoords(maker.city);
+        if (!coords) return;
+
+        const cluster = clusters.find(c => c.makerId === maker.id);
+        const p = latLonTo3D(coords.lat, coords.lon, rotation);
+        if (!p.visible) return;
+
+        const alpha = Math.max(0, (p.z + R * 0.1) / (R * 1.1));
+        const color = roleColor(maker.role);
+        const isLive = !!cluster;
+        const isSquare = maker.role === 'nonprofit' || maker.role === 'institution';
+
+        if (isLive) {
+            // Pulse ring
+            const pulse = 0.5 + 0.5 * Math.sin(now / 600);
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 12 + pulse * 4, 0, Math.PI * 2);
+            ctx.strokeStyle = color + '22';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
+            ctx.strokeStyle = color + '55';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+
+        // Dot — square for institutions, circle for others
+        ctx.globalAlpha = alpha * (isLive ? 1 : 0.3);
+        if (isSquare) {
+            const sz = isLive ? 8 : 4;
+            ctx.fillStyle = color;
+            ctx.fillRect(p.x - sz/2, p.y - sz/2, sz, sz);
+        } else {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, isLive ? 5 : 2, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+
+        // City label
+        if (isLive && alpha > 0.3) {
+            ctx.font = '8px "Helvetica Neue", Helvetica, Arial, sans-serif';
+            ctx.fillStyle = `rgba(255,255,255,${alpha * 0.55})`;
+            ctx.fillText((maker.city || '').toUpperCase(), p.x + 10, p.y + 3);
+        }
+    });
+}
+
+/* ── ANIMATE ── */
+function animate() {
+    if (autoRotate && !isDragging) rot += 0.04;
+    drawGlobe(rot);
+    requestAnimationFrame(animate);
+}
+animate();
+
+/* ── CLICK ON GLOBE — BUG FIX 1 ── */
+canvas.addEventListener('click', (e) => {
+    // Don't navigate if we just dragged
+    if (Math.abs(e.clientX - dragStartX) > 5) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+
+    for (const maker of makers) {
+        const coords = getCityCoords(maker.city);
+        if (!coords) continue;
+        const p = latLonTo3D(coords.lat, coords.lon, rot);
+        if (!p.visible) continue;
+        const dist = Math.sqrt((mx - p.x) ** 2 + (my - p.y) ** 2);
+        if (dist < 16) {
+            window.location.href = CLUSTER_URL + '?maker=' + encodeURIComponent(maker.id);
+            return;
+        }
+    }
+});
+
+/* ── TOOLTIP ── */
+const tooltip = document.getElementById('tooltip');
+canvas.addEventListener('mousemove', (e) => {
+    if (isDragging) { tooltip.style.display = 'none'; return; }
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    let found = false;
+    for (const maker of makers) {
+        const coords = getCityCoords(maker.city);
+        if (!coords) continue;
+        const p = latLonTo3D(coords.lat, coords.lon, rot);
+        if (!p.visible) continue;
+        const dist = Math.sqrt((mx - p.x) ** 2 + (my - p.y) ** 2);
+        if (dist < 16) {
+            const cluster = clusters.find(c => c.makerId === maker.id);
+            tooltip.style.display = 'block';
+            tooltip.style.left = (e.clientX + 14) + 'px';
+            tooltip.style.top  = (e.clientY - 10) + 'px';
+            tooltip.textContent = cluster
+                ? `${maker.name} · ${cluster.title}`
+                : maker.name;
+            canvas.style.cursor = 'pointer';
+            found = true;
+            break;
+        }
+    }
+    if (!found) {
+        tooltip.style.display = 'none';
+        canvas.style.cursor = isDragging ? 'grabbing' : 'grab';
+    }
+});
+canvas.addEventListener('mouseleave', () => {
+    tooltip.style.display = 'none';
+});
+
+/* ── TERMINAL FEED — BUG FIX 1: routes to ?maker=id ── */
+function pad(n) { return String(n).padStart(2, '0'); }
+
+function buildFeed() {
+    const feedEl = document.getElementById('feed-inner');
+    Object.values(cdTimers).forEach(t => clearInterval(t));
+    cdTimers = {};
+    feedEl.innerHTML = '';
+
+    const now = Date.now();
+    const lines = [];
+
+    clusters.forEach(cluster => {
+        const maker = makers.find(m => m.id === cluster.makerId);
+        if (!maker) return;
+        const rem = cluster.expiresAt - now;
+        if (rem <= 0) return;
+        lines.push({ maker, cluster, expiresAt: cluster.expiresAt });
+    });
+
+    lines.sort((a, b) => a.expiresAt - b.expiresAt);
+
+    lines.forEach((item, i) => {
+        const { maker, cluster } = item;
+        const line = document.createElement('div');
+        line.className = 'feed-line';
+        line.innerHTML = `
+            <span class="feed-city">${(maker.city || 'UNKNOWN').toUpperCase()}</span>
+            <span class="feed-cluster">${cluster.title.toUpperCase()}</span>
+            <span class="feed-name">${maker.name.toUpperCase()}</span>
+            <span class="feed-time" id="ft_${cluster.id}"></span>
+        `;
+        line.onclick = () => {
+            window.location.href = CLUSTER_URL + '?maker=' + encodeURIComponent(maker.id);
+        };
+        feedEl.appendChild(line);
+
+        setTimeout(() => line.classList.add('visible'), i * 200);
+
+        const timeEl = document.getElementById('ft_' + cluster.id);
+        cdTimers[cluster.id] = setInterval(() => {
+            const rem = cluster.expiresAt - Date.now();
+            if (rem <= 0) { clearInterval(cdTimers[cluster.id]); line.remove(); return; }
+            const h = Math.floor(rem / 3600000);
+            const m = Math.floor((rem % 3600000) / 60000);
+            const s = Math.floor((rem % 60000) / 1000);
+            timeEl.textContent = pad(h) + ':' + pad(m) + ':' + pad(s);
+            timeEl.className = 'feed-time' + (rem < 3600000 ? ' urgent' : '');
+        }, 1000);
+    });
+}
+
+/* ── TOGGLE MODE ── */
+function toggleMode() { document.body.classList.toggle('light-mode'); }
+
+/* ── LOAD ── */
+async function loadData() {
+    try {
+        const res = await fetch(WORKER_URL + '/api/data?nc=' + Date.now());
+        const data = await res.json();
+        makers   = data.makers   || [];
+        clusters = data.clusters || [];
+        archive  = data.archive  || [];
+
+        const liveCount = clusters.length;
+        document.getElementById('live-count').textContent = liveCount + ' LIVE';
+        buildFeed();
+    } catch(e) {
+        document.getElementById('console-msg').textContent = 'OFFLINE';
+    }
+}
+
+loadData();
+setInterval(loadData, 30000);
+</script>
+</body>
+</html>
