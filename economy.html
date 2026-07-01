@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>COMMONS ON DEMAND — Economy</title>
+    <style>
+        :root {
+            --void: #06070a;
+            --paper: #f6f3ec;
+            --pulse: #3c64ff;       /* the globe/ignition blue — also Commons' color here, on purpose */
+            --pulse-dim: rgba(60,100,255,0.5);
+            /* role colors (used inline, directly on the text swatches and split-cluster bar)
+               match the shapes/colors already used on the globe & canvas.
+               Green is reserved for Non-profit there, so it's never reused as a generic accent here. */
+            --line: rgba(255,255,255,0.09);
+            --ink: #f4f3ef;
+            --ink-dim: rgba(244,243,239,0.62);
+            --ink-faint: rgba(244,243,239,0.36);
+            --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+            --sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body {
+            background: var(--void); color: var(--ink);
+            font-family: var(--sans);
+            -webkit-font-smoothing: antialiased;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        body.light-mode {
+            --void: var(--paper); --ink: #17150f; --ink-dim: rgba(23,21,15,0.62);
+            --ink-faint: rgba(23,21,15,0.36); --line: rgba(0,0,0,0.09);
+        }
+        body.light-mode #header { background: rgba(246,243,236,0.85); }
+        body.light-mode .btn:hover { background: rgba(23,21,15,0.06); }
+        body.light-mode .ticket { background: linear-gradient(180deg, rgba(23,21,15,0.03), transparent); }
+
+        a { color: inherit; }
+        :focus-visible { outline: 2px solid var(--pulse); outline-offset: 3px; border-radius: 2px; }
+
+        #header {
+            position: fixed; top: 0; left: 0; right: 0;
+            padding: 18px 24px;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 100; background: rgba(6,7,10,0.85);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--line);
+        }
+        .title {
+            font-size: 11px; font-weight: bold; letter-spacing: 3px;
+            text-transform: uppercase; opacity: 0.85; text-decoration: none;
+        }
+        .btn {
+            background: none; border: 1px solid var(--ink-faint); color: var(--ink);
+            padding: 4px 10px; font-size: 9px; cursor: pointer; text-transform: uppercase;
+            letter-spacing: 1px; font-weight: bold; border-radius: 3px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn:hover { background: rgba(244,243,239,0.08); }
+
+        main { max-width: 660px; margin: 0 auto; padding: 128px 24px 100px; }
+
+        /* ── live indicator — the same pulse language as the globe ── */
+        .live {
+            display: flex; align-items: center; gap: 8px;
+            margin-bottom: 20px;
+        }
+        .live .dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: var(--pulse);
+            box-shadow: 0 0 0 0 var(--pulse-dim);
+            animation: breathe 2.8s ease-in-out infinite;
+        }
+        .live .tag {
+            font-family: var(--mono); font-size: 10px; letter-spacing: 2px;
+            text-transform: uppercase; color: var(--ink-faint);
+        }
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 var(--pulse-dim); }
+            50% { transform: scale(1.35); box-shadow: 0 0 0 5px transparent; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .live .dot { animation: none; }
+        }
+
+        h1 {
+            font-size: clamp(26px, 4vw, 32px);
+            font-weight: 700; letter-spacing: -0.01em;
+            margin-bottom: 20px;
+        }
+        .manifesto {
+            font-size: 17px; line-height: 1.65; font-weight: 500;
+            margin-bottom: 30px; padding-bottom: 30px;
+            border-bottom: 1px solid var(--line);
+            max-width: 560px;
+        }
+        .lede {
+            font-size: 14.5px; line-height: 1.75; color: var(--ink-dim);
+            margin-bottom: 56px; max-width: 560px;
+        }
+
+        section { margin-bottom: 52px; padding-left: 18px; border-left: 2px solid var(--pulse-dim); }
+
+        h2 {
+            font-family: var(--mono);
+            font-size: 10.5px; letter-spacing: 2px; text-transform: uppercase;
+            color: var(--ink-faint); margin-bottom: 16px; font-weight: 600;
+        }
+        p, li { font-size: 14.5px; line-height: 1.75; color: var(--ink-dim); margin-bottom: 12px; }
+        p:last-child { margin-bottom: 0; }
+        strong { color: var(--ink); font-weight: 700; }
+        em { color: var(--ink); font-style: normal; border-bottom: 1px dotted var(--ink-faint); }
+
+        /* ── the ticket — signature element, since the cluster IS the ticket ── */
+        .ticket {
+            display: flex;
+            border: 1px solid var(--line); border-radius: 12px;
+            overflow: hidden; margin-bottom: 18px;
+            background: linear-gradient(180deg, rgba(244,243,239,0.04), transparent);
+        }
+        .ticket-body { flex: 1; padding: 24px 26px; min-width: 0; }
+        .ticket-body p { margin-bottom: 10px; }
+        .ticket-body p:last-child { margin-bottom: 0; }
+        .ticket-stub {
+            flex-shrink: 0; width: 72px;
+            border-left: 1px dashed var(--line);
+            background: rgba(255,255,255,0.03);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 10px; padding: 16px 6px; text-align: center;
+        }
+        .ticket-stub .dot {
+            width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
+            background-color: #c45c7a;
+            background: conic-gradient(#c45c7a 0 20%, #4a7fa5 20% 40%, #e8453c 40% 55%, #e07b3a 55% 70%, #d4c84a 70% 85%, #7fff00 85% 100%);
+        }
+        .ticket-stub .label {
+            font-family: var(--mono); font-size: 8.5px; letter-spacing: 1px;
+            line-height: 1.6; text-transform: uppercase; color: var(--ink-faint);
+        }
+
+        /* ── role legend — clusters take the color of whoever opens them ── */
+        .rswatch {
+            display: inline-block; width: 7px; height: 7px; margin-right: 4px;
+            vertical-align: middle; transform: translateY(-1px);
+        }
+        .rswatch.circle { border-radius: 50%; }
+        .rswatch.oval { border-radius: 50%; width: 10px; height: 6px; }
+        .rswatch.square { border-radius: 1px; }
+
+        /* ── rule blocks (visit / accounts) ── */
+        .rule { border-left: 2px solid var(--pulse-dim); padding: 2px 0 2px 16px; margin: 16px 0; }
+        .rule .k {
+            font-family: var(--mono); font-size: 9px; letter-spacing: 1.5px;
+            text-transform: uppercase; color: var(--ink-faint); display: block; margin-bottom: 5px;
+        }
+        .rule .v { font-size: 14.5px; line-height: 1.7; color: var(--ink-dim); }
+
+        /* ── split visualization — hatched because the numbers are pending, on purpose ── */
+        .split { margin: 20px 0 22px; display: flex; flex-direction: column; gap: 16px; }
+        .split-row { display: flex; align-items: center; gap: 14px; }
+        .split-globe {
+            width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+        }
+        .split-row.cluster .split-globe {
+            background-color: #c45c7a;
+            background:
+                radial-gradient(circle at 34% 32%, rgba(255,255,255,0.4), transparent 55%),
+                conic-gradient(#c45c7a 0 20%, #4a7fa5 20% 40%, #e8453c 40% 55%, #e07b3a 55% 70%, #d4c84a 70% 85%, #7fff00 85% 100%);
+        }
+        .split-row.commons .split-globe {
+            background:
+                radial-gradient(circle at 34% 32%, rgba(255,255,255,0.45), transparent 55%),
+                radial-gradient(circle at 50% 50%, #6f8cff, #3c64ff 60%, #23408f 100%);
+            box-shadow: 0 0 10px rgba(60,100,255,0.35);
+        }
+        .split-label {
+            font-family: var(--mono); font-size: 10.5px; letter-spacing: 1px;
+            text-transform: uppercase; color: var(--ink-dim);
+        }
+        .split-value {
+            margin-left: auto;
+            font-family: var(--mono); font-size: 12px; color: var(--ink-faint);
+        }
+        .split-note {
+            font-size: 13px; line-height: 1.65; font-style: italic;
+            color: var(--ink-faint); margin: 4px 0 18px;
+        }
+
+        footer {
+            font-size: 10px; letter-spacing: 1px; color: var(--ink-faint);
+            text-align: center; padding: 44px 24px 60px;
+            border-top: 1px solid var(--line); margin-top: 20px;
+        }
+        a.enter { color: var(--pulse); text-decoration: none; font-weight: bold; }
+        a.enter:hover { text-decoration: underline; }
+
+        @media (max-width: 560px) {
+            main { padding-top: 108px; }
+            .ticket { grid-template-columns: 1fr 44px; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="header">
+    <a class="title" href="index.html">COMMONS ON DEMAND</a>
+    <button class="btn" onclick="document.body.classList.toggle('light-mode')" aria-label="Toggle light and dark mode">◐</button>
+</div>
+
+<!--
+    OPEN TASKS FOR THE TEAM — read before editing or pushing this file further.
+
+    1. [LEGAL] "Where the Money Goes" section — the Commons fund-use sentence
+       makes a public statement about how the Commons % is used. Needs a real
+       internal policy behind it before this is public beyond friends testing.
+    2. [LEGAL] "the Commons" is used throughout as a proper noun that receives
+       a share of revenue. Confirm this doesn't imply an unintended legal
+       structure (trust/nonprofit). May need a plain-language definition of
+       what "the Commons" legally is, likely on the Terms page, not here.
+    3. [TECH / PAYMENTS] Confirm the Paddle/Dodo integration is structured as
+       a true Merchant of Record — this page assumes COMMONS never holds or
+       moves viewer funds directly (money-transmitter licensing risk if not).
+    4. [LEGAL] No Terms of Service / refund policy is live yet (dev plan #27).
+       Needed before any real (non-friend) viewer pays, not just before this
+       page ships.
+    5. [FINANCE] Artist/Commons split percentages are shown as "—%" on purpose
+       (TBC after choosing third party payment and understanding taxes).
+       90/10 was a working assumption, not a checked number. Fill in only
+       after the payment provider (MoR) is chosen and its fees + tax
+       obligations are known — otherwise this page states a number that has
+       to be walked back later. Same applies to the board fee ($10/$15,
+       not shown as a number on this page yet, but referenced) and the
+       free-work fee (dev plan #23b) — none of these three numbers have
+       been priced against real provider/tax costs yet.
+
+    None of the above block this page from going to friends-testing. They
+    block it from going to strangers / production-at-scale.
+-->
+
+<main>
+    <div class="live" aria-hidden="true"><span class="dot"></span><span class="tag">Commons — live</span></div>
+
+    <h1>How the economy works</h1>
+    <p class="manifesto">"On demand" here doesn't mean perpetual availability. The earth has limited resources — so do we. This is a demand for using and redistributing what we use, create, and share with full attention and care.</p>
+    <p class="lede">COMMONS isn't an archive. Nothing here lives forever — every cluster exists for 24 hours, then it's gone. Because of that, the money works differently too: not by counting how many times something was watched, but by what the creator decided it was worth, up front. A cluster can mix music with video, writing with slides and sound — whatever combination the artist, filmmaker, musician, writer, curator, non-profit, or institution chooses. They shape it; the viewer experiences it.</p>
+
+    <section>
+        <h2>The Cluster is the Ticket</h2>
+        <div class="ticket">
+            <div class="ticket-body">
+                <p>When an <span class="rswatch circle" style="background:#c45c7a"></span>artist, <span class="rswatch circle" style="background:#4a7fa5"></span>filmmaker, <span class="rswatch circle" style="background:#e8453c"></span>musician, <span class="rswatch circle" style="background:#e07b3a"></span>writer, <span class="rswatch oval" style="background:#d4c84a"></span>curator, <span class="rswatch square" style="background:#7fff00"></span>non-profit, or <span class="rswatch square" style="background:#e9e9e9"></span>institution creates a cluster, they set a price for each work inside it — or mark it free. The cluster's total price is simply the sum of what's inside. A cluster with one song costs what that song is worth. A curator's cluster with three works costs more, because it holds more.</p>
+                <p>There is one gate: pay the cluster's total, and everything inside is yours to experience. No separate paywall hides behind another — what you see is what you pay for, once.</p>
+            </div>
+            <div class="ticket-stub" aria-hidden="true">
+                <span class="dot"></span>
+                <span class="label">24H<br>CLUSTER</span>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <h2>A Visit, Not a Stream</h2>
+        <div class="rule">
+            <span class="k">Play cap</span>
+            <span class="v">Once inside, each work can be played up to <strong>twice</strong>. A full visit — not an infinite loop. COMMONS isn't built for background consumption; it's built for being present.</span>
+        </div>
+        <div class="rule">
+            <span class="k">No accounts for viewers</span>
+            <span class="v">You don't need to sign up to enter a cluster. There's no watch history, no profile, no algorithm learning what you like. A ticket is anonymous, and it disappears when the cluster does.</span>
+        </div>
+    </section>
+
+    <section>
+        <h2>Where the Money Goes</h2>
+        <div class="split">
+            <div class="split-row cluster">
+                <span class="split-globe" aria-hidden="true"></span>
+                <span class="split-label">Cluster</span>
+                <span class="split-value">—%</span>
+            </div>
+            <div class="split-row commons">
+                <span class="split-globe" aria-hidden="true"></span>
+                <span class="split-label">Commons</span>
+                <span class="split-value">—%</span>
+            </div>
+        </div>
+        <p class="split-note">Exact percentages are being finalized once the payment provider and tax obligations are known, so the split is accurate rather than a placeholder guess. The mechanism below won't change — only the numbers will be filled in.</p>
+        <p>Every paid transaction splits instantly — most to the cluster, the rest to the Commons. There's no pool, no monthly reconciliation, no formula weighing one cluster's attention against another's. What you pay is divided the moment you pay it.</p>
+        <!-- see OPEN TASKS #1 and #2 at top of file -->
+        <p>The Commons share supports the Commons. A separate board fee funds infrastructure — and keeps opening a cluster a deliberate act, not a costless one, so shared resources aren't spent carelessly.</p>
+    </section>
+
+    <section>
+        <h2>Free Isn't Costless</h2>
+        <p>Marking a work free doesn't make it free to exist. Every free work still uses real bandwidth and real storage — real resources on a real planet. So offering something for free costs its creator a fee when the cluster is created, sized to what that particular work is likely to cost to deliver.</p>
+        <p>And every free work is capped: at most <strong>two people, ever</strong>, one click each, during its 24-hour life. Not because the fee doesn't cover more — it's a boundary, not a shortage. The internet is a utility, not an unlimited resource, and COMMONS treats it that way on purpose.</p>
+        <p>Once a free work has been seen by two people, it shows as <em>no longer available</em> — plainly, not silently.</p>
+    </section>
+
+    <section>
+        <h2>Why It Works This Way</h2>
+        <p>Most online experiences give you infinite scrolling. COMMONS makes money by being worth showing up for, once, fully — then letting go. This is what a sustainable one looks like.</p>
+    </section>
+</main>
+
+<footer>
+    2026 © commons-on-demand.com · <a class="enter" href="index.html">← back to the globe</a>
+</footer>
+
+</body>
+</html>
