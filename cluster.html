@@ -141,7 +141,7 @@
         .cluster-title-display { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); opacity: 0.6; margin-top: 2px; }
 
         /* OVERLAYS */
-        .overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.92); z-index: 5000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(8px); }
+        .overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.92); z-index: 5000; display: none; justify-content: center; align-items: flex-start; backdrop-filter: blur(8px); overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 40px 0 80px; }
         body.light-mode .overlay { background: rgba(255,255,255,0.92); }
 
         /* BOTTOM BAR */
